@@ -112,5 +112,11 @@
     {% endfor %}
 </div>
 
+{% if page_obj.paginator.num_pages > 1 %}
+<div class="card overflow-hidden mt-4">
+    {% include 'includes/pagination.html' %}
+</div>
+{% endif %}
+
 <!-- Campaign modal is included via base.html's {% include 'outreach/modal.html' %} -->
 {% endblock %}

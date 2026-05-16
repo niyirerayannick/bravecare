@@ -134,7 +134,7 @@
 </div>
 
 <!-- Table -->
-<div class="card overflow-hidden mb-5">
+<div class="card overflow-hidden">
     <div class="overflow-x-auto">
         <table class="w-full">
             <thead>
@@ -216,38 +216,8 @@
             </tbody>
         </table>
     </div>
+    {% include 'includes/pagination.html' %}
 </div>
-
-<!-- Pagination -->
-{% if page_obj.has_other_pages %}
-<div class="flex items-center justify-between">
-    <p class="text-sm text-gray-500">
-        Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }} records
-    </p>
-    <div class="flex items-center gap-1">
-        {% if page_obj.has_previous %}
-        <a href="?{% if query %}q={{ query }}&{% endif %}{% if type_filter %}type={{ type_filter }}&{% endif %}{% if status_filter %}status={{ status_filter }}&{% endif %}page={{ page_obj.previous_page_number }}"
-           class="px-3 py-2 text-sm rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-600 transition-colors">
-            <i class="fas fa-chevron-left text-xs"></i>
-        </a>
-        {% endif %}
-        {% for num in page_obj.paginator.page_range %}
-            {% if page_obj.number == num %}
-            <span class="px-3 py-2 text-sm rounded-xl bg-emerald-600 text-white font-semibold">{{ num }}</span>
-            {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
-            <a href="?{% if query %}q={{ query }}&{% endif %}{% if type_filter %}type={{ type_filter }}&{% endif %}{% if status_filter %}status={{ status_filter }}&{% endif %}page={{ num }}"
-               class="px-3 py-2 text-sm rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-600 transition-colors">{{ num }}</a>
-            {% endif %}
-        {% endfor %}
-        {% if page_obj.has_next %}
-        <a href="?{% if query %}q={{ query }}&{% endif %}{% if type_filter %}type={{ type_filter }}&{% endif %}{% if status_filter %}status={{ status_filter }}&{% endif %}page={{ page_obj.next_page_number }}"
-           class="px-3 py-2 text-sm rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-600 transition-colors">
-            <i class="fas fa-chevron-right text-xs"></i>
-        </a>
-        {% endif %}
-    </div>
-</div>
-{% endif %}
 
 
 <!-- ═══════  SCREENING MODAL  ═══════ -->

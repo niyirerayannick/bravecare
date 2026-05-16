@@ -120,7 +120,7 @@
                     <h3 class="text-base font-semibold text-gray-900">Message History</h3>
                     <p class="text-xs text-gray-500 mt-0.5">Recent communications</p>
                 </div>
-                <span class="text-xs text-gray-400">{{ recent_messages|length }} record{{ recent_messages|length|pluralize }}</span>
+                <span class="text-xs text-gray-400">{{ page_obj.paginator.count }} record{{ page_obj.paginator.count|pluralize }}</span>
             </div>
             <div class="divide-y divide-gray-50">
                 {% for msg in recent_messages %}
@@ -167,6 +167,7 @@
                 </div>
                 {% endfor %}
             </div>
+            {% include 'includes/pagination.html' %}
         </div>
     </div>
 </div>

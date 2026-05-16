@@ -108,6 +108,12 @@
     {% endfor %}
 </div>
 
+{% if page_obj.paginator.num_pages > 1 %}
+<div class="card overflow-hidden mt-4">
+    {% include 'includes/pagination.html' %}
+</div>
+{% endif %}
+
 
 <!-- ═══════  VOLUNTEER MODAL  ═══════ -->
 <div id="volunteerModal" class="bc-modal fixed inset-0 z-50 hidden flex items-center justify-center p-4">

@@ -157,12 +157,7 @@
             </tbody>
         </table>
     </div>
-    {% if patients %}
-    <div class="px-5 py-3 border-t border-gray-100 bg-gray-50/60 rounded-b-2xl text-xs text-gray-400">
-        Showing {{ patients|length }} patient{{ patients|length|pluralize }}
-        {% if query or risk_filter or province_filter or district_filter or sector_filter or cell_filter or village_filter %} (filtered){% endif %}
-    </div>
-    {% endif %}
+    {% include 'includes/pagination.html' %}
 </div>
 
 

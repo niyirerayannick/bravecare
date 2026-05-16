@@ -1,6 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.core.paginator import Paginator
 from django.http import JsonResponse
 from django.db.models import Q
 from .models import Volunteer
@@ -29,8 +30,18 @@ def volunteer_list(request):
     if status_filter:
         volunteers = volunteers.filter(status=status_filter)
 
+    per_page = int(request.GET.get('per_page', 10))
+    if per_page not in [10, 25, 50, 100]:
+        per_page = 10
+    paginator = Paginator(volunteers, per_page)
+    page_obj = paginator.get_page(request.GET.get('page', 1))
+    page_range = paginator.get_elided_page_range(page_obj.number, on_each_side=2, on_ends=1)
+
     context = {
-        'volunteers': volunteers,
+        'volunteers': page_obj,
+        'page_obj':   page_obj,
+        'per_page':   per_page,
+        'page_range': page_range,
         'query': query,
         'status_filter': status_filter,
         'active_count': Volunteer.objects.filter(status='active').count(),

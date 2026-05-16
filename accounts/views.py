@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.contrib.auth import login, logout, authenticate, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.core.paginator import Paginator
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
@@ -363,8 +364,18 @@ def user_list(request):
     if status_filter:
         users = users.filter(profile__status=status_filter)
 
+    per_page = int(request.GET.get('per_page', 10))
+    if per_page not in [10, 25, 50, 100]:
+        per_page = 10
+    paginator = Paginator(users, per_page)
+    page_obj = paginator.get_page(request.GET.get('page', 1))
+    page_range = paginator.get_elided_page_range(page_obj.number, on_each_side=2, on_ends=1)
+
     context = {
-        'users':        users,
+        'users':        page_obj,
+        'page_obj':     page_obj,
+        'per_page':     per_page,
+        'page_range':   page_range,
         'query':        query,
         'role_filter':  role_filter,
         'status_filter': status_filter,

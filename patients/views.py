@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
 from django.db.models import Q
 from django.core.paginator import Paginator
+from django.utils import timezone
 from .models import Patient, Screening, MaternalChildHealth, FollowUp
 from .forms import PatientForm, FollowUpForm, ScreeningForm
 from locations.models import Province, District, Sector, Cell, Village
@@ -48,8 +49,18 @@ def patient_list(request):
     cells     = Cell.objects.filter(sector_id=sector_filter).order_by('name')         if sector_filter   else Cell.objects.none()
     villages  = Village.objects.filter(cell_id=cell_filter).order_by('name')          if cell_filter     else Village.objects.none()
 
+    per_page = int(request.GET.get('per_page', 10))
+    if per_page not in [10, 25, 50, 100]:
+        per_page = 10
+    paginator = Paginator(patients, per_page)
+    page_obj = paginator.get_page(request.GET.get('page', 1))
+    page_range = paginator.get_elided_page_range(page_obj.number, on_each_side=2, on_ends=1)
+
     context = {
-        'patients': patients,
+        'patients':   page_obj,
+        'page_obj':   page_obj,
+        'per_page':   per_page,
+        'page_range': page_range,
         'query': query,
         'risk_filter':     risk_filter,
         'province_filter': province_filter,
@@ -203,8 +214,12 @@ def screening_list(request):
     date_to = request.GET.get('date_to', '')
 
     screenings_qs = _screening_queryset(request)
-    paginator = Paginator(screenings_qs, 25)
+    per_page = int(request.GET.get('per_page', 10))
+    if per_page not in [10, 25, 50, 100]:
+        per_page = 10
+    paginator = Paginator(screenings_qs, per_page)
     page_obj = paginator.get_page(request.GET.get('page', 1))
+    page_range = paginator.get_elided_page_range(page_obj.number, on_each_side=2, on_ends=1)
 
     total = Screening.objects.count()
     pending = Screening.objects.filter(status='pending').count()
@@ -216,7 +231,9 @@ def screening_list(request):
     ).count()
 
     context = {
-        'page_obj': page_obj,
+        'page_obj':   page_obj,
+        'per_page':   per_page,
+        'page_range': page_range,
         'query': query,
         'type_filter': type_filter,
         'result_filter': result_filter,
@@ -229,7 +246,6 @@ def screening_list(request):
         'referred_count': referred,
         'screening_type_choices': Screening.SCREENING_TYPE_CHOICES,
         'all_patients': Patient.objects.all().order_by('first_name', 'last_name'),
-        # keep legacy key for any remaining references
         'screenings': page_obj,
         'active_count': pending,
     }
@@ -404,15 +420,47 @@ def screening_export_pdf(request):
 @login_required
 def followup_list(request):
     status_filter = request.GET.get('status', '')
-    followups = FollowUp.objects.select_related('patient').all()
+    today = timezone.now().date()
 
+    all_fu = FollowUp.objects.select_related('patient')
+
+    # KPIs (always over unfiltered data)
+    total      = all_fu.count()
+    pending    = all_fu.filter(status='pending').count()
+    completed  = all_fu.filter(status='completed').count()
+    missed     = all_fu.filter(status='missed').count()
+    overdue    = all_fu.filter(status='pending', due_date__lt=today).count()
+    due_today  = all_fu.filter(status='pending', due_date=today).count()
+    done_total = completed + missed
+    completion_rate = round(completed / done_total * 100) if done_total else 0
+
+    followups = all_fu.all()
     if status_filter:
         followups = followups.filter(status=status_filter)
 
+    per_page = int(request.GET.get('per_page', 10))
+    if per_page not in [10, 25, 50, 100]:
+        per_page = 10
+    paginator = Paginator(followups, per_page)
+    page_obj = paginator.get_page(request.GET.get('page', 1))
+    page_range = paginator.get_elided_page_range(page_obj.number, on_each_side=2, on_ends=1)
+
     context = {
-        'followups': followups,
+        'followups':  page_obj,
+        'page_obj':   page_obj,
+        'per_page':   per_page,
+        'page_range': page_range,
         'status_filter': status_filter,
         'all_patients': Patient.objects.all().order_by('first_name', 'last_name'),
+        'kpi': {
+            'total': total,
+            'pending': pending,
+            'completed': completed,
+            'missed': missed,
+            'overdue': overdue,
+            'due_today': due_today,
+            'completion_rate': completion_rate,
+        },
     }
     return render(request, 'patients/followup_list.html', context)
 
