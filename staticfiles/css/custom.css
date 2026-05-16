@@ -1,0 +1,37 @@
+/* BraveCare Outreach — Custom overrides */
+* { box-sizing: border-box; }
+
+/* Smooth transitions for sidebar */
+#sidebar { transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+
+/* Chart.js canvas responsiveness */
+canvas { max-width: 100%; }
+
+/* Line clamp utility */
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.line-clamp-1 {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Table row hover */
+tr { transition: background-color 0.1s ease; }
+
+/* Form focus ring */
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
+
+/* Print styles */
+@media print {
+    #sidebar, header { display: none !important; }
+    main { padding: 0 !important; }
+}

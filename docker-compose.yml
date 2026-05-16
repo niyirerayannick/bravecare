@@ -1,0 +1,29 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_DB: bravecare
+      POSTGRES_USER: bravecare
+      POSTGRES_PASSWORD: bravecare_dev_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  web:
+    build: .
+    restart: always
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgres://bravecare:bravecare_dev_password@db:5432/bravecare
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
