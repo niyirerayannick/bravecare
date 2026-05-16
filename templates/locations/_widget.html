@@ -1,0 +1,84 @@
+{% comment %}
+Reusable location + phone widget.
+Include with: {% include 'locations/_widget.html' with prefix="patient" phone_field_id="patientPhoneHidden" %}
+  prefix           — unique ID prefix for all elements in this widget instance
+  phone_field_id   — id of the existing hidden <input name="phone"> in the parent form
+{% endcomment %}
+
+<div data-loc-prefix="{{ prefix }}">
+
+    <!-- Country -->
+    <div class="mb-3">
+        <label class="form-label">Country</label>
+        <select id="{{ prefix }}_country" name="country_id">
+            {% for c in countries %}
+            <option value="{{ c.id }}"
+                    data-iso="{{ c.iso_code|lower }}"
+                    data-phone-code="{{ c.phone_code }}"
+                    {% if c.iso_code == 'RW' %}selected{% endif %}>
+                {{ c.name }} ({{ c.phone_code }})
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- Rwanda structured fields -->
+    <div id="{{ prefix }}_rwanda_fields">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+                <label class="form-label">Province</label>
+                <select id="{{ prefix }}_province" name="province_id"><option value="">Select Province</option></select>
+            </div>
+            <div>
+                <label class="form-label">District</label>
+                <select id="{{ prefix }}_district" name="district_id"><option value="">Select District</option></select>
+            </div>
+            <div>
+                <label class="form-label">Sector</label>
+                <select id="{{ prefix }}_sector" name="sector_id"><option value="">Select Sector</option></select>
+            </div>
+            <div>
+                <label class="form-label">Cell <span class="text-gray-400 text-xs font-normal">(optional)</span></label>
+                <select id="{{ prefix }}_cell" name="cell_id"><option value="">Select Cell</option></select>
+            </div>
+            <div class="sm:col-span-2">
+                <label class="form-label">Village <span class="text-gray-400 text-xs font-normal">(optional)</span></label>
+                <select id="{{ prefix }}_village" name="village_id"><option value="">Select Village</option></select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Non-Rwanda free text -->
+    <div id="{{ prefix }}_nonrwanda_fields" class="hidden">
+        <label class="form-label">Full Address / Location</label>
+        <input type="text" id="{{ prefix }}_address_text" name="address_text"
+               class="form-input" placeholder="Street, Town, Country…">
+    </div>
+
+    <!-- Phone -->
+    <div class="mt-3">
+        <label class="form-label">Phone <span class="text-red-500">*</span></label>
+        <input type="tel" id="{{ prefix }}_phone_vis" class="form-input iti-phone-input"
+               data-phone-hidden="{{ phone_field_id }}"
+               autocomplete="tel" placeholder="78X XXX XXX">
+    </div>
+
+</div>
+
+<script>
+(function() {
+    /* Initialize this widget once DOM is ready */
+    function initWhenReady() {
+        if (typeof initLocWidget === 'function' && typeof TomSelect !== 'undefined' && typeof intlTelInput !== 'undefined') {
+            initLocWidget('{{ prefix }}', '{{ phone_field_id }}');
+        } else {
+            setTimeout(initWhenReady, 100);
+        }
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initWhenReady);
+    } else {
+        initWhenReady();
+    }
+})();
+</script>

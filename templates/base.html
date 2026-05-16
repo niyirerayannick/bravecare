@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}BraveCare Outreach{% endblock %}</title>
+
+    <!-- Tailwind Play CDN — type="text/tailwindcss" enables @apply processing -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50:  '#ecfdf5', 100: '#d1fae5', 200: '#a7f3d0',
+                            300: '#6ee7b7', 400: '#34d399', 500: '#10b981',
+                            600: '#059669', 700: '#047857', 800: '#065f46', 900: '#064e3b',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Process @apply with the CDN -->
+    <style type="text/tailwindcss">
+        /* Sidebar nav links */
+        .nav-link {
+            @apply flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-300
+                   hover:bg-slate-700/60 hover:text-white transition-all duration-150
+                   text-sm font-medium cursor-pointer w-full;
+        }
+        .nav-link.active {
+            @apply bg-emerald-600 text-white shadow-md shadow-emerald-900/30;
+        }
+        .nav-link .nav-icon {
+            @apply w-4 h-4 flex-shrink-0 opacity-80;
+        }
+        .nav-link.active .nav-icon { @apply opacity-100; }
+
+        /* Cards */
+        .card {
+            @apply bg-white rounded-2xl shadow-sm border border-gray-100;
+        }
+        .kpi-card {
+            @apply bg-white rounded-2xl p-5 shadow-sm border border-gray-100
+                   hover:shadow-md transition-shadow duration-200;
+        }
+
+        /* Buttons */
+        .btn-primary {
+            @apply inline-flex items-center gap-2 px-4 py-2 bg-emerald-600
+                   hover:bg-emerald-700 text-white text-sm font-medium rounded-xl
+                   transition-colors duration-150 shadow-sm cursor-pointer;
+        }
+        .btn-secondary {
+            @apply inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50
+                   text-gray-700 text-sm font-medium rounded-xl border border-gray-200
+                   transition-colors duration-150 cursor-pointer;
+        }
+        .btn-danger {
+            @apply inline-flex items-center gap-2 px-4 py-2 bg-red-600
+                   hover:bg-red-700 text-white text-sm font-medium rounded-xl
+                   transition-colors duration-150 cursor-pointer;
+        }
+
+        /* Form inputs */
+        .form-input {
+            @apply w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm
+                   focus:outline-none focus:ring-2 focus:ring-emerald-500/30
+                   focus:border-emerald-500 transition-all bg-white;
+        }
+        .form-select {
+            @apply w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm
+                   focus:outline-none focus:ring-2 focus:ring-emerald-500/30
+                   focus:border-emerald-500 transition-all bg-white;
+        }
+        .form-textarea {
+            @apply w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm
+                   focus:outline-none focus:ring-2 focus:ring-emerald-500/30
+                   focus:border-emerald-500 transition-all resize-none;
+        }
+        .form-label {
+            @apply block text-sm font-medium text-gray-700 mb-1.5;
+        }
+        .form-input.error, .form-select.error, .form-textarea.error {
+            @apply border-red-400 focus:ring-red-500/30 focus:border-red-500;
+        }
+
+        /* Risk / Status badges */
+        .badge {
+            @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold;
+        }
+        .badge-high    { @apply badge bg-red-100 text-red-700; }
+        .badge-medium  { @apply badge bg-amber-100 text-amber-700; }
+        .badge-low     { @apply badge bg-emerald-100 text-emerald-700; }
+        .badge-completed   { @apply badge bg-emerald-100 text-emerald-700; }
+        .badge-pending     { @apply badge bg-amber-100 text-amber-700; }
+        .badge-missed      { @apply badge bg-red-100 text-red-700; }
+        .badge-rescheduled { @apply badge bg-blue-100 text-blue-700; }
+        .badge-active      { @apply badge bg-emerald-100 text-emerald-700; }
+        .badge-inactive    { @apply badge bg-gray-100 text-gray-600; }
+        .badge-on_leave    { @apply badge bg-purple-100 text-purple-700; }
+        .badge-planned     { @apply badge bg-blue-100 text-blue-700; }
+        .badge-cancelled   { @apply badge bg-red-100 text-red-700; }
+        .badge-normal      { @apply badge bg-emerald-100 text-emerald-700; }
+        .badge-abnormal    { @apply badge bg-red-100 text-red-700; }
+        .badge-referred    { @apply badge bg-purple-100 text-purple-700; }
+        .badge-sent        { @apply badge bg-blue-100 text-blue-700; }
+        .badge-delivered   { @apply badge bg-emerald-100 text-emerald-700; }
+        .badge-draft       { @apply badge bg-gray-100 text-gray-600; }
+        .badge-failed      { @apply badge bg-red-100 text-red-700; }
+
+        /* Table */
+        .tbl-th {
+            @apply text-left text-xs font-semibold text-gray-500 uppercase tracking-wider
+                   px-4 py-3 bg-gray-50;
+        }
+        .tbl-td { @apply px-4 py-3.5 text-sm text-gray-700; }
+        .tbl-row { @apply border-b border-gray-50 hover:bg-gray-50/70 transition-colors; }
+
+        /* Scrollbar */
+        .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+        .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            @apply bg-slate-600 rounded;
+        }
+    </style>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- Tom Select (global — used for location dropdowns + screening) -->
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+
+    <!-- intl-tel-input -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@23.1.0/build/css/intlTelInput.css">
+    <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@23.1.0/build/js/intlTelInput.min.js"></script>
+
+    <style type="text/tailwindcss">
+        /* Tom Select — match BraveCare form style */
+        .ts-wrapper .ts-control {
+            @apply border border-gray-300 rounded-xl text-sm px-3 py-2.5 bg-white
+                   focus-within:ring-2 focus-within:ring-emerald-500/30 focus-within:border-emerald-500
+                   transition-all min-h-[42px];
+            box-shadow: none !important;
+        }
+        .ts-wrapper.focus .ts-control { @apply border-emerald-500; }
+        .ts-dropdown { @apply border border-gray-200 rounded-xl shadow-lg text-sm mt-1; }
+        .ts-dropdown .option { @apply px-3 py-2 text-gray-700 hover:bg-emerald-50 hover:text-emerald-700; }
+        .ts-dropdown .option.active { @apply bg-emerald-50 text-emerald-700; }
+        .ts-dropdown .option.selected { @apply bg-emerald-100 text-emerald-800 font-medium; }
+
+        /* intl-tel-input */
+        .iti { width: 100%; }
+        .iti__tel-input { @apply form-input pl-16 !important; }
+        .iti__flag-container { z-index: 5; }
+    </style>
+
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-gray-50 font-sans antialiased text-gray-900">
+
+<!-- ─────────────────────────  APP SHELL  ───────────────────────── -->
+<div class="flex h-screen overflow-hidden">
+
+    <!-- ═══════════════════  SIDEBAR  ═══════════════════ -->
+    <aside id="sidebar"
+           class="w-64 bg-slate-900 flex flex-col flex-shrink-0
+                  fixed inset-y-0 left-0 z-40
+                  transform -translate-x-full
+                  lg:translate-x-0 lg:static lg:inset-auto
+                  transition-transform duration-300 ease-in-out">
+
+        <!-- Logo -->
+        <div class="flex items-center gap-3 px-5 py-5 border-b border-slate-700/60 flex-shrink-0">
+            <div class="w-9 h-9 bg-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-900/40 flex-shrink-0">
+                <i class="fas fa-heartbeat text-white text-base"></i>
+            </div>
+            <div>
+                <div class="text-white font-bold text-[15px] leading-tight tracking-tight">BraveCare</div>
+                <div class="text-emerald-400 text-[11px] font-medium tracking-wide">Outreach System</div>
+            </div>
+        </div>
+
+        <!-- Nav -->
+        <nav class="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto scrollbar-thin">
+
+            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.12em] px-4 pt-1 pb-2">Main Menu</p>
+
+            <a href="{% url 'core:dashboard' %}"
+               class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                <i class="fas fa-th-large nav-icon"></i><span>Dashboard</span>
+            </a>
+
+            {% if can_manage_patients %}
+            <a href="{% url 'patients:list' %}"
+               class="nav-link {% if request.resolver_match.namespace == 'patients' and request.resolver_match.url_name == 'list' %}active{% endif %}">
+                <i class="fas fa-users nav-icon"></i><span>Patients</span>
+            </a>
+            {% endif %}
+
+            {% if can_manage_outreach %}
+            <a href="{% url 'outreach:list' %}"
+               class="nav-link {% if request.resolver_match.namespace == 'outreach' %}active{% endif %}">
+                <i class="fas fa-broadcast-tower nav-icon"></i><span>Outreach Campaigns</span>
+            </a>
+            {% endif %}
+
+            {% if can_manage_screening %}
+            <a href="{% url 'patients:screening_list' %}"
+               class="nav-link {% if request.resolver_match.url_name == 'screening_list' %}active{% endif %}">
+                <i class="fas fa-stethoscope nav-icon"></i><span>Screening</span>
+            </a>
+            {% endif %}
+
+            {% if can_manage_mch %}
+            <a href="{% url 'patients:followup_list' %}"
+               class="nav-link {% if request.resolver_match.url_name == 'followup_list' %}active{% endif %}">
+                <i class="fas fa-baby-carriage nav-icon"></i><span>Maternal &amp; Child</span>
+            </a>
+            {% endif %}
+
+            {% if can_manage_volunteers %}
+            <a href="{% url 'volunteers:list' %}"
+               class="nav-link {% if request.resolver_match.namespace == 'volunteers' %}active{% endif %}">
+                <i class="fas fa-hands-helping nav-icon"></i><span>Volunteers</span>
+            </a>
+            {% endif %}
+
+            {% if can_communicate %}
+            <a href="{% url 'communication:center' %}"
+               class="nav-link {% if request.resolver_match.namespace == 'communication' %}active{% endif %}">
+                <i class="fas fa-comments nav-icon"></i><span>Communication</span>
+            </a>
+            {% endif %}
+
+            {% if can_view_reports %}
+            <a href="{% url 'reports:index' %}"
+               class="nav-link {% if request.resolver_match.namespace == 'reports' %}active{% endif %}">
+                <i class="fas fa-chart-bar nav-icon"></i><span>Reports</span>
+            </a>
+            {% endif %}
+
+            {% if is_admin %}
+            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.12em] px-4 pt-4 pb-2">System</p>
+
+            <a href="{% url 'accounts:user_list' %}"
+               class="nav-link {% if request.resolver_match.namespace == 'accounts' and request.resolver_match.url_name == 'user_list' %}active{% endif %}">
+                <i class="fas fa-user-cog nav-icon"></i><span>User Management</span>
+            </a>
+
+            <a href="/admin/" class="nav-link" target="_blank">
+                <i class="fas fa-shield-alt nav-icon"></i><span>Admin Panel</span>
+            </a>
+            {% endif %}
+
+        </nav>
+
+        <!-- User footer -->
+        <div class="px-3 py-3 border-t border-slate-700/60 flex-shrink-0">
+            <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-800 transition-colors">
+                <div class="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                    {% with fn=request.user.first_name|slice:":1"|upper ln=request.user.last_name|slice:":1"|upper %}
+                        {% if fn %}{{ fn }}{{ ln }}{% else %}{{ request.user.username|slice:":2"|upper }}{% endif %}
+                    {% endwith %}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="text-white text-xs font-semibold truncate">
+                        {{ request.user.get_full_name|default:request.user.username }}
+                    </div>
+                    <div class="text-slate-400 text-[10px] truncate">
+                        {% if user_profile %}{{ user_profile.get_role_display }}{% else %}Administrator{% endif %}
+                    </div>
+                </div>
+                <a href="{% url 'accounts:logout' %}"
+                   class="text-slate-400 hover:text-white transition-colors p-1 rounded-lg hover:bg-slate-700"
+                   title="Sign out">
+                    <i class="fas fa-sign-out-alt text-xs"></i>
+                </a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Mobile backdrop -->
+    <div id="sidebarBackdrop"
+         class="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm hidden lg:hidden"
+         onclick="closeSidebar()">
+    </div>
+
+    <!-- ═══════════════════  MAIN AREA  ═══════════════════ -->
+    <div class="flex-1 flex flex-col overflow-hidden min-w-0">
+
+        <!-- ─── TOP HEADER ─── -->
+        <header class="flex-shrink-0 bg-white border-b border-gray-200 shadow-sm">
+            <div class="flex items-center gap-3 px-5 h-16">
+
+                <!-- Hamburger (mobile) -->
+                <button id="menuBtn" onclick="openSidebar()"
+                        class="lg:hidden p-2 rounded-xl hover:bg-gray-100 text-gray-500 transition-colors flex-shrink-0">
+                    <i class="fas fa-bars text-base"></i>
+                </button>
+
+                <!-- Title -->
+                <div class="flex-1 min-w-0">
+                    <h1 class="text-base font-bold text-gray-900 truncate leading-tight">
+                        {% block page_title %}BraveCare Outreach{% endblock %}
+                    </h1>
+                    <p class="text-[11px] text-gray-400 truncate mt-0.5">
+                        {% block page_subtitle %}Healthcare outreach management{% endblock %}
+                    </p>
+                </div>
+
+                <!-- Search -->
+                <form method="GET" action="{% url 'patients:list' %}"
+                      class="hidden md:flex items-center gap-2 bg-gray-50 border border-gray-200
+                             rounded-xl px-3 py-2 w-52 focus-within:ring-2 focus-within:ring-emerald-400/30
+                             focus-within:border-emerald-400 transition-all">
+                    <i class="fas fa-search text-gray-400 text-xs flex-shrink-0"></i>
+                    <input type="text" name="q" placeholder="Search patients…"
+                           class="bg-transparent text-sm text-gray-700 outline-none w-full placeholder-gray-400">
+                </form>
+
+                <!-- New Outreach CTA -->
+                <button onclick="openModal('campaignModal')"
+                        class="btn-primary hidden sm:inline-flex flex-shrink-0">
+                    <i class="fas fa-plus text-xs"></i><span>New Outreach</span>
+                </button>
+
+                <!-- Bell -->
+                <button class="relative p-2 rounded-xl hover:bg-gray-100 text-gray-500 transition-colors flex-shrink-0">
+                    <i class="fas fa-bell text-base"></i>
+                    <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-emerald-500 rounded-full ring-2 ring-white"></span>
+                </button>
+
+                <!-- User avatar + dropdown -->
+                <div class="relative flex-shrink-0" id="userDropdownWrapper">
+                    <button onclick="toggleUserDropdown()"
+                            class="flex items-center gap-2 p-1 rounded-xl hover:bg-gray-100 transition-colors group">
+                        <div class="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center
+                                    text-white text-xs font-bold ring-2 ring-emerald-200">
+                            {% with fn=request.user.first_name|slice:":1"|upper ln=request.user.last_name|slice:":1"|upper %}
+                                {% if fn %}{{ fn }}{{ ln }}{% else %}{{ request.user.username|slice:":2"|upper }}{% endif %}
+                            {% endwith %}
+                        </div>
+                        <i class="fas fa-chevron-down text-[10px] text-gray-400 group-hover:text-gray-600 hidden sm:block"></i>
+                    </button>
+
+                    <!-- Dropdown panel -->
+                    <div id="userDropdown"
+                         class="hidden absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-xl
+                                border border-gray-100 z-50 overflow-hidden">
+                        <!-- User info -->
+                        <div class="px-4 py-3.5 border-b border-gray-100 bg-gray-50/50">
+                            <div class="flex items-center gap-3">
+                                <div class="w-9 h-9 rounded-xl bg-emerald-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                                    {% with fn=request.user.first_name|slice:":1"|upper ln=request.user.last_name|slice:":1"|upper %}
+                                        {% if fn %}{{ fn }}{{ ln }}{% else %}{{ request.user.username|slice:":2"|upper }}{% endif %}
+                                    {% endwith %}
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="text-sm font-semibold text-gray-900 truncate">
+                                        {{ request.user.get_full_name|default:request.user.username }}
+                                    </div>
+                                    <div class="text-xs text-gray-500 truncate">
+                                        {% if user_profile %}{{ user_profile.get_role_display }}{% else %}Administrator{% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Menu items -->
+                        <div class="py-1.5">
+                            <a href="{% url 'accounts:profile' %}"
+                               class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                                <i class="fas fa-user text-gray-400 w-4 text-center"></i>
+                                My Profile
+                            </a>
+                            <button onclick="closeUserDropdown(); openModal('changePasswordModal');"
+                                    class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors w-full text-left">
+                                <i class="fas fa-key text-gray-400 w-4 text-center"></i>
+                                Change Password
+                            </button>
+                            {% if is_admin %}
+                            <a href="{% url 'accounts:user_list' %}"
+                               class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                                <i class="fas fa-users-cog text-gray-400 w-4 text-center"></i>
+                                User Management
+                            </a>
+                            {% endif %}
+                        </div>
+
+                        <div class="border-t border-gray-100 py-1.5">
+                            <a href="{% url 'accounts:logout' %}"
+                               class="flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors">
+                                <i class="fas fa-sign-out-alt w-4 text-center"></i>
+                                Sign Out
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Flash Messages -->
+        {% if messages %}
+        <div class="px-5 pt-4 space-y-2 flex-shrink-0">
+            {% for msg in messages %}
+            <div class="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium
+                {% if msg.tags == 'error' %}bg-red-50 text-red-700 border border-red-200
+                {% elif msg.tags == 'success' %}bg-emerald-50 text-emerald-700 border border-emerald-200
+                {% elif msg.tags == 'warning' %}bg-amber-50 text-amber-700 border border-amber-200
+                {% else %}bg-blue-50 text-blue-700 border border-blue-200{% endif %}">
+                <i class="fas
+                    {% if msg.tags == 'error' %}fa-exclamation-circle
+                    {% elif msg.tags == 'success' %}fa-check-circle
+                    {% elif msg.tags == 'warning' %}fa-exclamation-triangle
+                    {% else %}fa-info-circle{% endif %}"></i>
+                <span class="flex-1">{{ msg }}</span>
+                <button onclick="this.closest('[class*=rounded-xl]').remove()"
+                        class="opacity-50 hover:opacity-100 transition-opacity">
+                    <i class="fas fa-times text-xs"></i>
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Page Content -->
+        <main class="flex-1 overflow-y-auto p-5 lg:p-6">
+            {% block content %}{% endblock %}
+        </main>
+
+    </div><!-- /main area -->
+</div><!-- /app shell -->
+
+
+<!-- ═══════════════  GLOBAL CAMPAIGN MODAL (header button)  ═══════════════ -->
+{% include 'outreach/modal.html' %}
+
+<!-- ═══════════════  CHANGE PASSWORD MODAL  ═══════════════ -->
+<div id="changePasswordModal"
+     class="bc-modal hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+            <h3 class="font-bold text-gray-900 text-base flex items-center gap-2">
+                <i class="fas fa-key text-emerald-600"></i> Change Password
+            </h3>
+            <button onclick="closeModal('changePasswordModal')" class="text-gray-400 hover:text-gray-600 transition-colors p-1">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form id="changePasswordForm" method="post" action="{% url 'accounts:change_password' %}" class="px-6 py-5 space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="form-label">Current Password</label>
+                <input type="password" name="current_password" class="form-input" placeholder="Enter current password" required>
+            </div>
+            <div>
+                <label class="form-label">New Password</label>
+                <input type="password" name="new_password" class="form-input" placeholder="Enter new password" required>
+            </div>
+            <div>
+                <label class="form-label">Confirm New Password</label>
+                <input type="password" name="confirm_password" class="form-input" placeholder="Confirm new password" required>
+            </div>
+            <div class="flex justify-end gap-3 pt-2">
+                <button type="button" onclick="closeModal('changePasswordModal')" class="btn-secondary">Cancel</button>
+                <button type="button" onclick="submitModalForm('changePasswordForm','changePasswordModal','Password changed successfully!')"
+                        class="btn-primary btn-save">
+                    <i class="fas fa-check text-xs"></i> Update Password
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ═══════════════  TOAST CONTAINER  ═══════════════ -->
+<div id="toastContainer" class="fixed top-4 right-4 z-[200] space-y-2 pointer-events-none"></div>
+
+
+<!-- ─── Scripts ─── -->
+<script src="https://cdn.tailwindcss.com?plugins="></script>
+<script>
+/* ──────────────────────────────────────────────────
+   SIDEBAR TOGGLE
+────────────────────────────────────────────────── */
+const sidebar   = document.getElementById('sidebar');
+const backdrop  = document.getElementById('sidebarBackdrop');
+
+function openSidebar() {
+    sidebar.classList.remove('-translate-x-full');
+    backdrop.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+function closeSidebar() {
+    sidebar.classList.add('-translate-x-full');
+    backdrop.classList.add('hidden');
+    document.body.style.overflow = '';
+}
+
+/* Close sidebar on ESC */
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+        closeSidebar();
+        closeUserDropdown();
+        document.querySelectorAll('.bc-modal:not(.hidden)').forEach(m => closeModal(m.id));
+    }
+});
+
+
+/* ──────────────────────────────────────────────────
+   USER DROPDOWN
+────────────────────────────────────────────────── */
+function toggleUserDropdown() {
+    const dd = document.getElementById('userDropdown');
+    dd.classList.toggle('hidden');
+}
+function closeUserDropdown() {
+    document.getElementById('userDropdown').classList.add('hidden');
+}
+document.addEventListener('click', e => {
+    const wrapper = document.getElementById('userDropdownWrapper');
+    if (wrapper && !wrapper.contains(e.target)) closeUserDropdown();
+});
+
+
+/* ──────────────────────────────────────────────────
+   MODAL SYSTEM
+────────────────────────────────────────────────── */
+function openModal(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => {
+        const first = el.querySelector('input:not([type=hidden]),select,textarea');
+        if (first) first.focus();
+    }, 100);
+}
+
+function closeModal(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.add('hidden');
+    document.body.style.overflow = '';
+    clearModalErrors(id);
+}
+
+function clearModalErrors(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.querySelectorAll('.field-error').forEach(e => e.remove());
+    el.querySelectorAll('.error').forEach(e => e.classList.remove('error', 'border-red-400'));
+    el.querySelectorAll('.form-level-error').forEach(e => e.remove());
+}
+
+
+/* ──────────────────────────────────────────────────
+   LOCATION WIDGET SYSTEM
+────────────────────────────────────────────────── */
+const _itiInstances = {};
+const _tsLocInstances = {};
+
+function initLocWidget(prefix, phoneHiddenId) {
+    const container = document.querySelector(`[data-loc-prefix="${prefix}"]`);
+    if (!container || container.dataset.locInited) return;
+    container.dataset.locInited = '1';
+
+    // Country Tom Select
+    const countryEl = document.getElementById(`${prefix}_country`);
+    if (!countryEl) return;
+    const tsCountry = new TomSelect(countryEl, { maxOptions: null, searchField: ['text'] });
+    _tsLocInstances[`${prefix}_country`] = tsCountry;
+
+    // Cascading selects
+    ['province', 'district', 'sector', 'cell', 'village'].forEach(level => {
+        const el = document.getElementById(`${prefix}_${level}`);
+        if (!el) return;
+        const ts = new TomSelect(el, {
+            maxOptions: null, searchField: ['text'],
+            placeholder: `Select ${level.charAt(0).toUpperCase() + level.slice(1)}`,
+        });
+        _tsLocInstances[`${prefix}_${level}`] = ts;
+        ts.on('change', val => {
+            if (!val) return;
+            _clearLocBelow(prefix, level);
+            const next = {province:'district', district:'sector', sector:'cell', cell:'village'}[level];
+            if (next) _loadLocLevel(prefix, level, val, next);
+        });
+    });
+
+    // Country change handler
+    tsCountry.on('change', val => {
+        const opt = countryEl.querySelector(`option[value="${val}"]`);
+        const iso = opt ? opt.dataset.iso : '';
+        _toggleRwanda(prefix, iso === 'rw');
+        if (iso === 'rw') _loadProvinces(prefix, val);
+        // Sync iti country flag
+        const iti = _itiInstances[`${prefix}_phone`];
+        if (iti && iso) { try { iti.setCountry(iso); } catch(e) {} }
+    });
+
+    // Init Rwanda fields for default country
+    const selOpt = countryEl.options[countryEl.selectedIndex];
+    const initIso = selOpt ? selOpt.dataset.iso : '';
+    const initCid = countryEl.value;
+    _toggleRwanda(prefix, initIso === 'rw');
+    if (initIso === 'rw' && initCid) _loadProvinces(prefix, initCid);
+
+    // intl-tel-input on phone visible input
+    const phoneVis = document.getElementById(`${prefix}_phone_vis`);
+    if (phoneVis) {
+        const iti = intlTelInput(phoneVis, {
+            initialCountry: initIso || 'rw',
+            preferredCountries: ['rw', 'ug', 'ke', 'tz', 'bi', 'cd'],
+            separateDialCode: true,
+            utilsScript: 'https://cdn.jsdelivr.net/npm/intl-tel-input@23.1.0/build/js/utils.js',
+        });
+        _itiInstances[`${prefix}_phone`] = iti;
+        // Store reference on element for submit hook
+        phoneVis.dataset.itiKey = `${prefix}_phone`;
+        phoneVis.dataset.itiTarget = phoneHiddenId || '';
+    }
+}
+
+function _toggleRwanda(prefix, isRw) {
+    const rw = document.getElementById(`${prefix}_rwanda_fields`);
+    const nr = document.getElementById(`${prefix}_nonrwanda_fields`);
+    if (rw) rw.classList.toggle('hidden', !isRw);
+    if (nr) nr.classList.toggle('hidden', isRw);
+}
+
+async function _loadProvinces(prefix, countryId) {
+    const data = await fetch(`/locations/provinces/?country_id=${countryId}`).then(r => r.json()).catch(() => []);
+    const ts = _tsLocInstances[`${prefix}_province`];
+    if (!ts) return;
+    ts.clearOptions();
+    ts.addOption([{value:'', text:'Select Province'}, ...data.map(d => ({value: String(d.id), text: d.name}))]);
+    ts.clear(true);
+    _clearLocBelow(prefix, 'province');
+}
+
+async function _loadLocLevel(prefix, fromLevel, fromId, toLevel) {
+    const ep = {province:'districts', district:'sectors', sector:'cells', cell:'villages'}[fromLevel];
+    const par = {province:'province_id', district:'district_id', sector:'sector_id', cell:'cell_id'}[fromLevel];
+    const data = await fetch(`/locations/${ep}/?${par}=${fromId}`).then(r => r.json()).catch(() => []);
+    const ts = _tsLocInstances[`${prefix}_${toLevel}`];
+    if (!ts) return;
+    ts.clearOptions();
+    const cap = toLevel.charAt(0).toUpperCase() + toLevel.slice(1);
+    ts.addOption([{value:'', text:`Select ${cap}`}, ...data.map(d => ({value: String(d.id), text: d.name}))]);
+    ts.clear(true);
+}
+
+function _clearLocBelow(prefix, fromLevel) {
+    const order = ['province','district','sector','cell','village'];
+    const idx = order.indexOf(fromLevel) + 1;
+    for (let i = idx; i < order.length; i++) {
+        const ts = _tsLocInstances[`${prefix}_${order[i]}`];
+        if (ts) { ts.clearOptions(); ts.clear(true); }
+    }
+}
+
+async function setLocValues(prefix, data) {
+    /* Called from edit modals to pre-populate location from JSON data */
+    const tsCountry = _tsLocInstances[`${prefix}_country`];
+    if (!tsCountry) return;
+    const cid = String(data.country_id || '');
+    if (cid) tsCountry.setValue(cid, true);
+
+    const countryEl = document.getElementById(`${prefix}_country`);
+    const selOpt = countryEl?.querySelector(`option[value="${cid}"]`);
+    const iso = selOpt ? selOpt.dataset.iso : '';
+    _toggleRwanda(prefix, iso === 'rw');
+
+    // Non-Rwanda address
+    const addrEl = document.getElementById(`${prefix}_address_text`);
+    if (addrEl) addrEl.value = data.address_text || '';
+
+    if (iso === 'rw' && data.country_id) {
+        await _loadProvinces(prefix, data.country_id);
+        const tsP = _tsLocInstances[`${prefix}_province`];
+        if (tsP && data.province_id) {
+            tsP.setValue(String(data.province_id), true);
+            if (data.district_id) {
+                await _loadLocLevel(prefix, 'province', data.province_id, 'district');
+                const tsD = _tsLocInstances[`${prefix}_district`];
+                if (tsD) tsD.setValue(String(data.district_id), true);
+                if (data.sector_id) {
+                    await _loadLocLevel(prefix, 'district', data.district_id, 'sector');
+                    const tsS = _tsLocInstances[`${prefix}_sector`];
+                    if (tsS) tsS.setValue(String(data.sector_id), true);
+                    if (data.cell_id) {
+                        await _loadLocLevel(prefix, 'sector', data.sector_id, 'cell');
+                        const tsC = _tsLocInstances[`${prefix}_cell`];
+                        if (tsC) tsC.setValue(String(data.cell_id), true);
+                        if (data.village_id) {
+                            await _loadLocLevel(prefix, 'cell', data.cell_id, 'village');
+                            const tsV = _tsLocInstances[`${prefix}_village`];
+                            if (tsV) tsV.setValue(String(data.village_id), true);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Phone
+    if (data.phone !== undefined) {
+        const iti = _itiInstances[`${prefix}_phone`];
+        if (iti) { try { iti.setNumber(data.phone || ''); } catch(e) {} }
+        else {
+            const hiddenId = document.getElementById(`${prefix}_phone_vis`)?.dataset.itiTarget;
+            const hiddenEl = hiddenId ? document.getElementById(hiddenId) : null;
+            if (hiddenEl) hiddenEl.value = data.phone || '';
+        }
+    }
+}
+
+function resetLocWidget(prefix) {
+    const tsCountry = _tsLocInstances[`${prefix}_country`];
+    if (tsCountry) {
+        // Reset to Rwanda
+        const rwOpt = Array.from(document.getElementById(`${prefix}_country`)?.options || [])
+            .find(o => o.dataset.iso === 'rw');
+        if (rwOpt) tsCountry.setValue(rwOpt.value, true);
+    }
+    _clearLocBelow(prefix, 'province');
+    const tsP = _tsLocInstances[`${prefix}_province`];
+    if (tsP) { tsP.clearOptions(); tsP.clear(true); }
+    const addrEl = document.getElementById(`${prefix}_address_text`);
+    if (addrEl) addrEl.value = '';
+    const iti = _itiInstances[`${prefix}_phone`];
+    if (iti) { try { iti.setNumber(''); iti.setCountry('rw'); } catch(e) {} }
+    const countryEl = document.getElementById(`${prefix}_country`);
+    const selOpt = countryEl?.options[countryEl.selectedIndex];
+    const iso = selOpt ? selOpt.dataset.iso : 'rw';
+    _toggleRwanda(prefix, iso === 'rw');
+    if (iso === 'rw' && countryEl?.value) _loadProvinces(prefix, countryEl.value);
+}
+
+
+/* ──────────────────────────────────────────────────
+   AJAX FORM SUBMISSION
+────────────────────────────────────────────────── */
+async function submitModalForm(formId, modalId, successMsg) {
+    const form = document.getElementById(formId);
+    if (!form) return;
+
+    // Pre-submit: collect intl-tel-input values into hidden phone fields
+    form.querySelectorAll('.iti-phone-input[data-iti-target]').forEach(visInput => {
+        const itiKey = visInput.dataset.itiKey;
+        const targetId = visInput.dataset.itiTarget;
+        if (itiKey && _itiInstances[itiKey] && targetId) {
+            const num = _itiInstances[itiKey].getNumber();
+            const hiddenEl = document.getElementById(targetId);
+            if (hiddenEl && num) hiddenEl.value = num;
+        }
+    });
+
+    clearModalErrors(modalId);
+
+    const btn = form.closest('.bc-modal').querySelector('.btn-save');
+    const origHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i>Saving…';
+    }
+
+    try {
+        const resp = await fetch(form.action || window.location.href, {
+            method: 'POST',
+            body: new FormData(form),
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+
+        let data;
+        try { data = await resp.json(); } catch { data = { success: false }; }
+
+        if (data.success) {
+            closeModal(modalId);
+            showToast(successMsg || data.message || 'Saved successfully!', 'success');
+            setTimeout(() => location.reload(), 700);
+        } else {
+            showFieldErrors(form, data.errors || {});
+            if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
+        }
+    } catch (err) {
+        if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
+        showToast('Network error — please try again.', 'error');
+    }
+}
+
+function showFieldErrors(form, errors) {
+    for (const [field, msgs] of Object.entries(errors)) {
+        if (field === '__all__' || field === 'non_field_errors') {
+            const div = document.createElement('div');
+            div.className = 'form-level-error mb-3 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600';
+            div.textContent = Array.isArray(msgs) ? msgs[0] : msgs;
+            form.prepend(div);
+            continue;
+        }
+        const input = form.querySelector(`[name="${field}"]`);
+        if (!input) continue;
+        input.classList.add('error', 'border-red-400');
+        const errEl = document.createElement('p');
+        errEl.className = 'field-error text-red-500 text-xs mt-1';
+        errEl.textContent = Array.isArray(msgs) ? msgs[0] : msgs;
+        input.parentNode.insertBefore(errEl, input.nextSibling);
+    }
+}
+
+
+/* ──────────────────────────────────────────────────
+   LOAD ENTITY DATA → POPULATE EDIT MODAL
+────────────────────────────────────────────────── */
+async function loadAndOpenModal(jsonUrl, editUrl, formId, modalId, titleEl, editTitle, iconClass) {
+    if (titleEl) {
+        titleEl.innerHTML = `<i class="${iconClass} text-emerald-600 mr-2"></i>${editTitle}`;
+    }
+    const form = document.getElementById(formId);
+    form.action = editUrl;
+    form.reset();
+    clearModalErrors(modalId);
+
+    try {
+        const r = await fetch(jsonUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        const d = await r.json();
+        for (const [key, val] of Object.entries(d)) {
+            const el = form.querySelector(`[name="${key}"]`);
+            if (el) el.value = val === null ? '' : val;
+        }
+        openModal(modalId);
+    } catch {
+        showToast('Failed to load record data.', 'error');
+    }
+}
+
+
+/* ──────────────────────────────────────────────────
+   TOAST NOTIFICATIONS
+────────────────────────────────────────────────── */
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg
+        text-sm font-medium text-white transition-all duration-300 opacity-0 translate-y-2
+        ${type === 'success' ? 'bg-emerald-600' : type === 'warning' ? 'bg-amber-600' : 'bg-red-600'}`;
+    toast.innerHTML = `
+        <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'warning' ? 'fa-exclamation-triangle' : 'fa-times-circle'}"></i>
+        <span>${message}</span>
+        <button onclick="this.parentElement.remove()" class="ml-auto opacity-70 hover:opacity-100">
+            <i class="fas fa-times text-xs"></i>
+        </button>`;
+    container.appendChild(toast);
+    requestAnimationFrame(() => {
+        toast.classList.remove('opacity-0', 'translate-y-2');
+        toast.classList.add('opacity-100', 'translate-y-0');
+    });
+    setTimeout(() => { toast.classList.add('opacity-0'); setTimeout(() => toast.remove(), 300); }, 4000);
+}
+</script>
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

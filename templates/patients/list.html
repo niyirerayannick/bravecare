@@ -1,0 +1,358 @@
+{% extends 'base.html' %}
+{% block title %}Patients — BraveCare{% endblock %}
+{% block page_title %}Patient Management{% endblock %}
+{% block page_subtitle %}Register, search, and track all community patients{% endblock %}
+
+{% block content %}
+
+<!-- Stats Strip -->
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
+    <div class="kpi-card text-center">
+        <div class="text-2xl font-bold text-gray-900">{{ total_count }}</div>
+        <div class="text-xs text-gray-500 mt-0.5 font-medium">Total Patients</div>
+    </div>
+    <div class="bg-red-50 rounded-2xl p-4 border border-red-100 text-center">
+        <div class="text-2xl font-bold text-red-700">{{ high_risk_count }}</div>
+        <div class="text-xs text-red-600 mt-0.5 font-medium">High Risk</div>
+    </div>
+    <div class="bg-amber-50 rounded-2xl p-4 border border-amber-100 text-center">
+        <div class="text-2xl font-bold text-amber-700">{{ medium_risk_count }}</div>
+        <div class="text-xs text-amber-600 mt-0.5 font-medium">Medium Risk</div>
+    </div>
+    <div class="bg-emerald-50 rounded-2xl p-4 border border-emerald-100 text-center">
+        <div class="text-2xl font-bold text-emerald-700">{{ low_risk_count }}</div>
+        <div class="text-xs text-emerald-600 mt-0.5 font-medium">Low Risk</div>
+    </div>
+</div>
+
+<!-- Filters + Add -->
+<div class="card p-4 mb-5">
+    <form method="GET" class="flex flex-wrap gap-3 items-center">
+        <div class="flex-1 min-w-52 relative">
+            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+            <input type="text" name="q" value="{{ query }}"
+                   placeholder="Search by name, ID, phone…"
+                   class="form-input pl-9">
+        </div>
+        <select name="risk" class="form-select w-auto min-w-40">
+            <option value="">All Risk Levels</option>
+            <option value="high"   {% if risk_filter == 'high' %}selected{% endif %}>High Risk</option>
+            <option value="medium" {% if risk_filter == 'medium' %}selected{% endif %}>Medium Risk</option>
+            <option value="low"    {% if risk_filter == 'low' %}selected{% endif %}>Low Risk</option>
+        </select>
+        <select name="province" id="patientProvinceFilter" class="form-select w-auto min-w-36">
+            <option value="">All Provinces</option>
+            {% for prov in provinces %}
+            <option value="{{ prov.id }}" {% if province_filter == prov.id|stringformat:"s" %}selected{% endif %}>{{ prov.name }}</option>
+            {% endfor %}
+        </select>
+        <select name="district" id="patientDistrictFilter" class="form-select w-auto min-w-36">
+            <option value="">All Districts</option>
+            {% for dist in districts %}
+            <option value="{{ dist.id }}" {% if district_filter == dist.id|stringformat:"s" %}selected{% endif %}>{{ dist.name }}</option>
+            {% endfor %}
+        </select>
+        <select name="sector" id="patientSectorFilter" class="form-select w-auto min-w-36 {% if not district_filter %}hidden{% endif %}">
+            <option value="">All Sectors</option>
+            {% for sec in sectors %}
+            <option value="{{ sec.id }}" {% if sector_filter == sec.id|stringformat:"s" %}selected{% endif %}>{{ sec.name }}</option>
+            {% endfor %}
+        </select>
+        <select name="cell" id="patientCellFilter" class="form-select w-auto min-w-32 {% if not sector_filter %}hidden{% endif %}">
+            <option value="">All Cells</option>
+            {% for cell in cells %}
+            <option value="{{ cell.id }}" {% if cell_filter == cell.id|stringformat:"s" %}selected{% endif %}>{{ cell.name }}</option>
+            {% endfor %}
+        </select>
+        <select name="village" id="patientVillageFilter" class="form-select w-auto min-w-32 {% if not cell_filter %}hidden{% endif %}">
+            <option value="">All Villages</option>
+            {% for vil in villages %}
+            <option value="{{ vil.id }}" {% if village_filter == vil.id|stringformat:"s" %}selected{% endif %}>{{ vil.name }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn-secondary">
+            <i class="fas fa-filter text-xs"></i> Filter
+        </button>
+        {% if query or risk_filter or province_filter or district_filter or sector_filter or cell_filter or village_filter %}
+        <a href="{% url 'patients:list' %}" class="btn-secondary">
+            <i class="fas fa-times text-xs"></i> Clear
+        </a>
+        {% endif %}
+        <!-- Add Patient → opens modal -->
+        <button type="button" onclick="openAddPatientModal()" class="btn-primary ml-auto">
+            <i class="fas fa-user-plus text-xs"></i> Add Patient
+        </button>
+    </form>
+</div>
+
+<!-- Table -->
+<div class="card overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead>
+                <tr>
+                    <th class="tbl-th rounded-tl-2xl">Patient</th>
+                    <th class="tbl-th hidden md:table-cell">National ID</th>
+                    <th class="tbl-th hidden sm:table-cell">Phone</th>
+                    <th class="tbl-th hidden lg:table-cell">Location</th>
+                    <th class="tbl-th">Risk</th>
+                    <th class="tbl-th hidden sm:table-cell">Registered</th>
+                    <th class="tbl-th text-right rounded-tr-2xl">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in patients %}
+                <tr class="tbl-row">
+                    <td class="tbl-td">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600
+                                        flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                                {{ p.first_name|slice:":1" }}{{ p.last_name|slice:":1" }}
+                            </div>
+                            <div>
+                                <div class="font-semibold text-gray-900 text-sm leading-tight">{{ p.get_full_name }}</div>
+                                <div class="text-xs text-gray-400 mt-0.5">{{ p.get_gender_display }} · {{ p.age }} yrs</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="tbl-td hidden md:table-cell font-mono text-xs text-gray-600">{{ p.national_id }}</td>
+                    <td class="tbl-td hidden sm:table-cell text-gray-600">{{ p.phone }}</td>
+                    <td class="tbl-td hidden lg:table-cell">
+                        <span class="text-gray-600 max-w-36 truncate block">{{ p.display_location }}</span>
+                    </td>
+                    <td class="tbl-td"><span class="badge-{{ p.risk_level }}">{{ p.get_risk_level_display }}</span></td>
+                    <td class="tbl-td hidden sm:table-cell text-xs text-gray-400">{{ p.created_at|date:"M d, Y" }}</td>
+                    <td class="tbl-td text-right">
+                        <div class="flex items-center justify-end gap-1">
+                            <a href="{% url 'patients:detail' p.pk %}"
+                               class="p-2 rounded-xl hover:bg-emerald-50 text-emerald-600 hover:text-emerald-700 transition-colors"
+                               title="View">
+                                <i class="fas fa-eye text-xs"></i>
+                            </a>
+                            <button onclick="openEditPatientModal({{ p.pk }})"
+                                    class="p-2 rounded-xl hover:bg-blue-50 text-blue-600 hover:text-blue-700 transition-colors"
+                                    title="Edit">
+                                <i class="fas fa-pencil text-xs"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="px-5 py-14 text-center">
+                        <i class="fas fa-users text-5xl text-gray-200 mb-3 block"></i>
+                        <p class="text-gray-500 font-semibold">No patients found</p>
+                        <p class="text-gray-400 text-sm mt-1">
+                            {% if query or risk_filter or province_filter or district_filter or sector_filter or cell_filter or village_filter %}Try adjusting your search filters
+                            {% else %}Get started by adding your first patient{% endif %}
+                        </p>
+                        {% if not query and not risk_filter and not province_filter and not district_filter and not sector_filter and not cell_filter and not village_filter %}
+                        <button onclick="openAddPatientModal()" class="btn-primary mt-4 inline-flex">
+                            <i class="fas fa-user-plus text-xs"></i> Add First Patient
+                        </button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if patients %}
+    <div class="px-5 py-3 border-t border-gray-100 bg-gray-50/60 rounded-b-2xl text-xs text-gray-400">
+        Showing {{ patients|length }} patient{{ patients|length|pluralize }}
+        {% if query or risk_filter or province_filter or district_filter or sector_filter or cell_filter or village_filter %} (filtered){% endif %}
+    </div>
+    {% endif %}
+</div>
+
+
+<!-- ═══════════════════  PATIENT MODAL (Add / Edit)  ═══════════════════ -->
+<div id="patientModal" class="bc-modal fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('patientModal')"></div>
+    <div class="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col max-h-[92vh]">
+
+        <!-- Header -->
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center">
+                    <i class="fas fa-user-circle text-emerald-600"></i>
+                </div>
+                <h2 id="patientModalTitle" class="text-base font-semibold text-gray-900">Add New Patient</h2>
+            </div>
+            <button onclick="closeModal('patientModal')"
+                    class="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100
+                           text-gray-400 hover:text-gray-600 transition-colors">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+        </div>
+
+        <!-- Body (scrollable) -->
+        <div class="overflow-y-auto flex-1">
+            <form id="patientForm" method="POST" action="{% url 'patients:add' %}" class="p-6">
+
+                {% csrf_token %}
+
+                <!-- Personal -->
+                <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-3">Personal Information</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+                    <div>
+                        <label class="form-label">First Name <span class="text-red-500">*</span></label>
+                        <input type="text" name="first_name" class="form-input" placeholder="First name">
+                    </div>
+                    <div>
+                        <label class="form-label">Last Name <span class="text-red-500">*</span></label>
+                        <input type="text" name="last_name" class="form-input" placeholder="Last name">
+                    </div>
+                    <div>
+                        <label class="form-label">Date of Birth <span class="text-red-500">*</span></label>
+                        <input type="date" name="date_of_birth" class="form-input">
+                    </div>
+                    <div>
+                        <label class="form-label">Gender <span class="text-red-500">*</span></label>
+                        <select name="gender" class="form-select">
+                            <option value="">— Select —</option>
+                            <option value="M">Male</option>
+                            <option value="F">Female</option>
+                            <option value="O">Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Contact & ID -->
+                <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-3">Contact &amp; Identification</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-2">
+                    <div>
+                        <!-- Phone hidden input — value filled by intl-tel-input -->
+                        <input type="hidden" name="phone" id="patientPhoneHidden">
+                    </div>
+                    <div>
+                        <label class="form-label">National ID <span class="text-red-500">*</span></label>
+                        <input type="text" name="national_id" class="form-input" placeholder="ID number">
+                    </div>
+                </div>
+                <!-- Location + phone widget -->
+                <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-3">Location</p>
+                <div class="mb-5">
+                    {% include 'locations/_widget.html' with prefix="patient" phone_field_id="patientPhoneHidden" %}
+                </div>
+
+                <!-- Clinical -->
+                <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-3">Clinical</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="form-label">Risk Level</label>
+                        <select name="risk_level" class="form-select">
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="form-label">Notes</label>
+                        <textarea name="notes" class="form-textarea" rows="2" placeholder="Clinical notes…"></textarea>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Footer -->
+        <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/80 rounded-b-2xl flex-shrink-0">
+            <button type="button" onclick="closeModal('patientModal')" class="btn-secondary">
+                <i class="fas fa-times text-xs"></i> Cancel
+            </button>
+            <button type="button"
+                    onclick="submitModalForm('patientForm','patientModal')"
+                    class="btn-primary btn-save">
+                <i class="fas fa-save text-xs"></i> Save Patient
+            </button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const PATIENT_ADD_URL  = "{% url 'patients:add' %}";
+const PATIENT_EDIT_BASE = "/patients/";
+
+function openAddPatientModal() {
+    const form  = document.getElementById('patientForm');
+    const title = document.getElementById('patientModalTitle');
+    title.textContent = 'Add New Patient';
+    form.action = PATIENT_ADD_URL;
+    form.reset();
+    clearModalErrors('patientModal');
+    resetLocWidget('patient');
+    openModal('patientModal');
+}
+
+async function openEditPatientModal(id) {
+    document.getElementById('patientModalTitle').textContent = 'Edit Patient';
+    const form = document.getElementById('patientForm');
+    form.action = `${PATIENT_EDIT_BASE}${id}/edit/`;
+    form.reset();
+    clearModalErrors('patientModal');
+    try {
+        const d = await fetch(`${PATIENT_EDIT_BASE}${id}/json/`, { headers: {'X-Requested-With':'XMLHttpRequest'} }).then(r => r.json());
+        ['first_name','last_name','national_id','date_of_birth','gender','risk_level','notes'].forEach(k => {
+            const el = form.querySelector(`[name="${k}"]`);
+            if (el && d[k] !== undefined) el.value = d[k];
+        });
+        await setLocValues('patient', d);
+        openModal('patientModal');
+    } catch(e) {
+        showToast('Failed to load patient data.', 'error');
+    }
+}
+
+// Province → District → Sector → Cell → Village cascade for list filter bar
+document.addEventListener('DOMContentLoaded', () => {
+    const provSel = document.getElementById('patientProvinceFilter');
+    const distSel = document.getElementById('patientDistrictFilter');
+    const secSel  = document.getElementById('patientSectorFilter');
+    const cellSel = document.getElementById('patientCellFilter');
+    const vilSel  = document.getElementById('patientVillageFilter');
+
+    async function loadOptions(sel, url, emptyLabel) {
+        sel.innerHTML = `<option value="">${emptyLabel}</option>`;
+        if (!url) { sel.classList.add('hidden'); return; }
+        try {
+            const data = await fetch(url).then(r => r.json());
+            data.forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d.id; opt.textContent = d.name;
+                sel.appendChild(opt);
+            });
+            sel.classList.toggle('hidden', data.length === 0);
+        } catch { sel.classList.add('hidden'); }
+    }
+
+    provSel.addEventListener('change', async () => {
+        const id = provSel.value;
+        await loadOptions(distSel, id ? `/locations/districts/?province_id=${id}` : null, 'All Districts');
+        await loadOptions(secSel,  null, 'All Sectors');
+        await loadOptions(cellSel, null, 'All Cells');
+        await loadOptions(vilSel,  null, 'All Villages');
+    });
+
+    distSel.addEventListener('change', async () => {
+        const id = distSel.value;
+        await loadOptions(secSel,  id ? `/locations/sectors/?district_id=${id}` : null, 'All Sectors');
+        await loadOptions(cellSel, null, 'All Cells');
+        await loadOptions(vilSel,  null, 'All Villages');
+    });
+
+    secSel.addEventListener('change', async () => {
+        const id = secSel.value;
+        await loadOptions(cellSel, id ? `/locations/cells/?sector_id=${id}` : null, 'All Cells');
+        await loadOptions(vilSel,  null, 'All Villages');
+    });
+
+    cellSel.addEventListener('change', async () => {
+        const id = cellSel.value;
+        await loadOptions(vilSel, id ? `/locations/villages/?cell_id=${id}` : null, 'All Villages');
+    });
+});
+</script>
+{% endblock %}

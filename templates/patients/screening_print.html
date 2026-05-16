@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Screening Records — BraveCare</title>
+<style>
+  body { font-family: Arial, sans-serif; font-size: 12px; color: #1f2937; margin: 20px; }
+  h1 { font-size: 18px; color: #059669; margin-bottom: 4px; }
+  p.sub { font-size: 11px; color: #6b7280; margin-bottom: 16px; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th { background: #059669; color: #fff; padding: 8px 10px; text-align: left; font-size: 11px; }
+  tbody tr:nth-child(even) { background: #f9fafb; }
+  tbody td { padding: 7px 10px; border-bottom: 1px solid #e5e7eb; }
+  .badge-pos { color: #dc2626; font-weight: 600; }
+  .badge-neg { color: #059669; font-weight: 600; }
+  .badge-ref { color: #2563eb; font-weight: 600; }
+  @media print { @page { margin: 1cm; } button { display: none; } }
+</style>
+</head>
+<body>
+<h1>BraveCare — Screening Records</h1>
+<p class="sub">Exported {{ screenings|length }} records{% if query %} · Query: "{{ query }}"{% endif %} · {{ request.user.get_full_name|default:request.user.username }} · {% now "M d, Y H:i" %}</p>
+<button onclick="window.print()" style="margin-bottom:12px;padding:6px 14px;background:#059669;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;">
+    Print / Save as PDF
+</button>
+<table>
+    <thead>
+        <tr>
+            <th>Patient</th>
+            <th>National ID</th>
+            <th>Screening Type</th>
+            <th>Result</th>
+            <th>Risk</th>
+            <th>Status</th>
+            <th>Date</th>
+            <th>Next Follow-up</th>
+            <th>Healthcare Worker</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for s in screenings %}
+        <tr>
+            <td>{{ s.patient.get_full_name }}</td>
+            <td>{{ s.patient.national_id }}</td>
+            <td>{{ s.get_screening_type_display }}</td>
+            <td>{{ s.result|default:"—" }}</td>
+            <td>{{ s.get_risk_level_display }}</td>
+            <td>{{ s.get_status_display }}</td>
+            <td>{{ s.screening_date }}</td>
+            <td>{{ s.next_followup_date|default:"—" }}</td>
+            <td>{{ s.performed_by.get_full_name|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="9" style="text-align:center;padding:20px;color:#9ca3af;">No screening records found.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+</body>
+</html>

@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+{% block title %}Follow-ups — BraveCare{% endblock %}
+{% block page_title %}Patient Follow-ups{% endblock %}
+{% block page_subtitle %}Schedule and track all patient follow-up activities{% endblock %}
+
+{% block content %}
+
+<!-- Filters + Add -->
+<div class="card p-4 mb-5">
+    <form method="GET" class="flex flex-wrap gap-3 items-center">
+        <select name="status" class="form-select w-auto min-w-44">
+            <option value="">All Statuses</option>
+            <option value="pending"     {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+            <option value="completed"   {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+            <option value="missed"      {% if status_filter == 'missed' %}selected{% endif %}>Missed</option>
+            <option value="rescheduled" {% if status_filter == 'rescheduled' %}selected{% endif %}>Rescheduled</option>
+        </select>
+        <button type="submit" class="btn-secondary">
+            <i class="fas fa-filter text-xs"></i> Filter
+        </button>
+        {% if status_filter %}
+        <a href="{% url 'patients:followup_list' %}" class="btn-secondary">
+            <i class="fas fa-times text-xs"></i> Clear
+        </a>
+        {% endif %}
+        <button type="button" onclick="openAddFollowupModal()" class="btn-primary ml-auto">
+            <i class="fas fa-plus text-xs"></i> Add Follow-up
+        </button>
+    </form>
+</div>
+
+<!-- Table -->
+<div class="card overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead>
+                <tr>
+                    <th class="tbl-th">Patient</th>
+                    <th class="tbl-th">Service</th>
+                    <th class="tbl-th hidden sm:table-cell">Location</th>
+                    <th class="tbl-th">Due Date</th>
+                    <th class="tbl-th">Risk</th>
+                    <th class="tbl-th">Status</th>
+                    <th class="tbl-th text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for f in followups %}
+                <tr class="tbl-row">
+                    <td class="tbl-td">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 text-xs font-bold flex-shrink-0">
+                                {{ f.patient.first_name|slice:":1" }}{{ f.patient.last_name|slice:":1" }}
+                            </div>
+                            <span class="font-semibold text-sm text-gray-900">{{ f.patient.get_full_name }}</span>
+                        </div>
+                    </td>
+                    <td class="tbl-td text-gray-600 max-w-40">
+                        <span class="truncate block">{{ f.service }}</span>
+                    </td>
+                    <td class="tbl-td hidden sm:table-cell text-gray-500 text-xs">{{ f.patient.location }}</td>
+                    <td class="tbl-td {% if f.status == 'missed' %}text-red-600 font-semibold{% else %}text-gray-700{% endif %}">
+                        {{ f.due_date|date:"M d, Y" }}
+                    </td>
+                    <td class="tbl-td"><span class="badge-{{ f.patient.risk_level }}">{{ f.patient.get_risk_level_display }}</span></td>
+                    <td class="tbl-td"><span class="badge-{{ f.status }}">{{ f.get_status_display }}</span></td>
+                    <td class="tbl-td text-right">
+                        <div class="flex items-center justify-end gap-1">
+                            <a href="{% url 'patients:detail' f.patient.pk %}"
+                               class="p-2 rounded-xl hover:bg-emerald-50 text-emerald-600 transition-colors"
+                               title="View patient"><i class="fas fa-eye text-xs"></i></a>
+                            <button onclick="openEditFollowupModal({{ f.pk }})"
+                                    class="p-2 rounded-xl hover:bg-blue-50 text-blue-600 transition-colors"
+                                    title="Edit"><i class="fas fa-pencil text-xs"></i></button>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="px-5 py-14 text-center">
+                        <i class="fas fa-calendar-times text-5xl text-gray-200 mb-3 block"></i>
+                        <p class="text-gray-500 font-semibold">No follow-ups found</p>
+                        <button onclick="openAddFollowupModal()" class="btn-primary mt-4 inline-flex">
+                            <i class="fas fa-plus text-xs"></i> Schedule Follow-up
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+<!-- ═══════  FOLLOW-UP MODAL  ═══════ -->
+<div id="followupModal" class="bc-modal fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('followupModal')"></div>
+    <div class="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[92vh]">
+
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center">
+                    <i class="fas fa-calendar-check text-amber-600"></i>
+                </div>
+                <h2 id="followupModalTitle" class="text-base font-semibold text-gray-900">Add Follow-up</h2>
+            </div>
+            <button onclick="closeModal('followupModal')"
+                    class="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+        </div>
+
+        <div class="overflow-y-auto flex-1">
+            <form id="followupForm" method="POST" action="{% url 'patients:followup_add' %}" class="p-6 space-y-4">
+                {% csrf_token %}
+                <div>
+                    <label class="form-label">Patient <span class="text-red-500">*</span></label>
+                    <select name="patient" class="form-select">
+                        <option value="">— Select patient —</option>
+                        {% for pat in all_patients %}
+                        <option value="{{ pat.pk }}">{{ pat.get_full_name }} ({{ pat.national_id }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Service / Reason <span class="text-red-500">*</span></label>
+                    <input type="text" name="service" class="form-input" placeholder="e.g. Hypertension follow-up, Immunization…">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="form-label">Due Date <span class="text-red-500">*</span></label>
+                        <input type="date" name="due_date" class="form-input">
+                    </div>
+                    <div>
+                        <label class="form-label">Status</label>
+                        <select name="status" class="form-select">
+                            <option value="pending">Pending</option>
+                            <option value="completed">Completed</option>
+                            <option value="missed">Missed</option>
+                            <option value="rescheduled">Rescheduled</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="form-label">Notes</label>
+                    <textarea name="notes" class="form-textarea" rows="2" placeholder="Additional notes…"></textarea>
+                </div>
+            </form>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/80 rounded-b-2xl flex-shrink-0">
+            <button type="button" onclick="closeModal('followupModal')" class="btn-secondary">
+                <i class="fas fa-times text-xs"></i> Cancel
+            </button>
+            <button type="button"
+                    onclick="submitModalForm('followupForm','followupModal','Follow-up saved!')"
+                    class="btn-primary btn-save">
+                <i class="fas fa-save text-xs"></i> Save Follow-up
+            </button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function openAddFollowupModal() {
+    const form = document.getElementById('followupForm');
+    document.getElementById('followupModalTitle').textContent = 'Schedule Follow-up';
+    form.action = "{% url 'patients:followup_add' %}";
+    form.reset();
+    clearModalErrors('followupModal');
+    openModal('followupModal');
+}
+
+async function openEditFollowupModal(id) {
+    document.getElementById('followupModalTitle').textContent = 'Edit Follow-up';
+    await loadAndOpenModal(
+        `/patients/followups/${id}/json/`,
+        `/patients/followups/${id}/edit/`,
+        'followupForm', 'followupModal',
+        null, null, null
+    );
+}
+</script>
+{% endblock %}

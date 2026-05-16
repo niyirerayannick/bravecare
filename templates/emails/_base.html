@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  body{margin:0;padding:0;background:#f1f5f9;font-family:'Segoe UI',Arial,sans-serif;color:#1e293b}
+  .wrap{max-width:580px;margin:32px auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+  .header{background:linear-gradient(135deg,#059669 0%,#047857 100%);padding:32px 40px;text-align:center}
+  .header-logo{width:52px;height:52px;background:rgba(255,255,255,.2);border-radius:14px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px}
+  .header h1{margin:0;color:#ffffff;font-size:22px;font-weight:700;letter-spacing:-.3px}
+  .header p{margin:6px 0 0;color:rgba(255,255,255,.8);font-size:13px}
+  .body{padding:36px 40px}
+  .greeting{font-size:16px;font-weight:600;color:#0f172a;margin-bottom:8px}
+  .text{font-size:14px;line-height:1.7;color:#475569;margin-bottom:16px}
+  .otp-box{background:#f0fdf4;border:2px solid #bbf7d0;border-radius:12px;padding:20px;text-align:center;margin:24px 0}
+  .otp-code{font-size:42px;font-weight:800;letter-spacing:12px;color:#065f46;font-family:'Courier New',monospace;margin:4px 0}
+  .otp-note{font-size:12px;color:#6b7280;margin-top:8px}
+  .cred-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:20px;margin:20px 0}
+  .cred-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f1f5f9}
+  .cred-row:last-child{border-bottom:none}
+  .cred-label{font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.5px}
+  .cred-value{font-size:14px;font-weight:700;color:#0f172a;font-family:'Courier New',monospace;background:#e2e8f0;padding:3px 10px;border-radius:6px}
+  .btn{display:inline-block;background:#059669;color:#ffffff;text-decoration:none;padding:13px 32px;border-radius:10px;font-weight:700;font-size:14px;margin:8px 0}
+  .warning-box{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:16px 20px;margin:20px 0;font-size:13px;color:#92400e}
+  .divider{height:1px;background:#f1f5f9;margin:24px 0}
+  .footer{background:#f8fafc;padding:20px 40px;text-align:center;border-top:1px solid #f1f5f9}
+  .footer p{font-size:12px;color:#94a3b8;margin:4px 0}
+  .footer strong{color:#64748b}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <div class="header-logo">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+    </div>
+    <h1>BraveCare Outreach</h1>
+    <p>Healthcare Outreach Management System</p>
+  </div>
+  <div class="body">
+    {% block content %}{% endblock %}
+  </div>
+  <div class="footer">
+    <p>This email was sent by <strong>BraveCare Outreach</strong>.</p>
+    <p>If you did not request this, please ignore this email or contact your administrator.</p>
+  </div>
+</div>
+</body>
+</html>

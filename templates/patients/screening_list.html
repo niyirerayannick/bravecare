@@ -1,0 +1,503 @@
+{% extends 'base.html' %}
+{% block title %}Screenings — BraveCare{% endblock %}
+{% block page_title %}Screening Records{% endblock %}
+{% block page_subtitle %}Log, track, and analyse all patient screening activities{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.min.css">
+<style>
+/* Tom Select — BraveCare theme */
+.ts-wrapper.single .ts-control,
+.ts-wrapper.multi .ts-control {
+    border: 1px solid #d1d5db;
+    border-radius: 0.75rem;
+    padding: 0 0.75rem;
+    min-height: 2.5rem;
+    background: #fff;
+    font-size: 0.875rem;
+    color: #374151;
+    box-shadow: none;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    cursor: pointer;
+}
+.ts-wrapper.focus .ts-control {
+    border-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16,185,129,.15);
+    outline: none;
+}
+.ts-wrapper .ts-control input { font-size: 0.875rem; color: #374151; }
+.ts-wrapper .ts-control .placeholder { color: #9ca3af; }
+.ts-dropdown {
+    border: 1px solid #d1d5db;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 16px rgba(0,0,0,.1);
+    margin-top: 0.25rem;
+    overflow: hidden;
+}
+.ts-dropdown .ts-dropdown-content { max-height: 220px; }
+.ts-dropdown .option { padding: 0.5rem 0.875rem; font-size: 0.875rem; color: #374151; }
+.ts-dropdown .option:hover, .ts-dropdown .option.active { background: #ecfdf5; color: #065f46; }
+.ts-dropdown .option.selected { background: #10b981; color: #fff; }
+.ts-dropdown .no-results { padding: 0.75rem; color: #9ca3af; font-size: 0.875rem; text-align: center; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Stats -->
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
+    <div class="kpi-card text-center p-4">
+        <div class="text-2xl font-bold text-gray-900">{{ total_count }}</div>
+        <div class="text-xs text-gray-500 mt-0.5 font-medium">Total Screenings</div>
+    </div>
+    <div class="bg-amber-50 rounded-2xl p-4 border border-amber-100 text-center">
+        <div class="text-2xl font-bold text-amber-700">{{ pending_count }}</div>
+        <div class="text-xs text-amber-600 mt-0.5 font-medium">Pending Results</div>
+    </div>
+    <div class="bg-red-50 rounded-2xl p-4 border border-red-100 text-center">
+        <div class="text-2xl font-bold text-red-700">{{ positive_count }}</div>
+        <div class="text-xs text-red-600 mt-0.5 font-medium">Positive / Critical</div>
+    </div>
+    <div class="bg-blue-50 rounded-2xl p-4 border border-blue-100 text-center">
+        <div class="text-2xl font-bold text-blue-700">{{ referred_count }}</div>
+        <div class="text-xs text-blue-600 mt-0.5 font-medium">Referred</div>
+    </div>
+</div>
+
+<!-- Filters + Actions -->
+<div class="card p-4 mb-5">
+    <form method="GET" id="filterForm" class="space-y-3">
+        <!-- Row 1 -->
+        <div class="flex flex-wrap gap-3 items-center">
+            <div class="flex-1 min-w-52 relative">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                <input type="text" name="q" value="{{ query }}"
+                       placeholder="Search patient name, phone, ID…"
+                       class="form-input pl-9">
+            </div>
+            <select name="type" class="form-select w-auto min-w-44">
+                <option value="">All Screening Types</option>
+                {% for val, label in screening_type_choices %}
+                <option value="{{ val }}" {% if type_filter == val %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            <select name="status" class="form-select w-auto min-w-36">
+                <option value="">All Statuses</option>
+                <option value="pending"   {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+                <option value="referred"  {% if status_filter == 'referred' %}selected{% endif %}>Referred</option>
+                <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Cancelled</option>
+            </select>
+        </div>
+        <!-- Row 2 -->
+        <div class="flex flex-wrap gap-3 items-center">
+            <div class="flex items-center gap-2">
+                <label class="text-xs text-gray-500 font-medium whitespace-nowrap">Date from</label>
+                <input type="date" name="date_from" value="{{ date_from }}" class="form-input w-auto">
+            </div>
+            <div class="flex items-center gap-2">
+                <label class="text-xs text-gray-500 font-medium whitespace-nowrap">to</label>
+                <input type="date" name="date_to" value="{{ date_to }}" class="form-input w-auto">
+            </div>
+            <button type="submit" class="btn-secondary">
+                <i class="fas fa-filter text-xs"></i> Filter
+            </button>
+            {% if query or type_filter or status_filter or date_from or date_to %}
+            <a href="{% url 'patients:screening_list' %}" class="btn-secondary">
+                <i class="fas fa-times text-xs"></i> Clear
+            </a>
+            {% endif %}
+
+            <!-- Export buttons -->
+            <div class="flex items-center gap-2 ml-auto">
+                <a href="{% url 'patients:screening_export_csv' %}?{{ request.GET.urlencode }}"
+                   class="btn-secondary text-xs">
+                    <i class="fas fa-file-csv text-green-600"></i> CSV
+                </a>
+                <a href="{% url 'patients:screening_export_excel' %}?{{ request.GET.urlencode }}"
+                   class="btn-secondary text-xs">
+                    <i class="fas fa-file-excel text-emerald-600"></i> Excel
+                </a>
+                <a href="{% url 'patients:screening_export_pdf' %}?{{ request.GET.urlencode }}"
+                   target="_blank" class="btn-secondary text-xs">
+                    <i class="fas fa-file-pdf text-red-600"></i> PDF
+                </a>
+                <button type="button" onclick="openAddScreeningModal()" class="btn-primary">
+                    <i class="fas fa-plus text-xs"></i> Add Screening
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Table -->
+<div class="card overflow-hidden mb-5">
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead>
+                <tr>
+                    <th class="tbl-th">Patient</th>
+                    <th class="tbl-th">Screening Type</th>
+                    <th class="tbl-th">Result</th>
+                    <th class="tbl-th hidden md:table-cell">Risk</th>
+                    <th class="tbl-th hidden sm:table-cell">Date</th>
+                    <th class="tbl-th">Status</th>
+                    <th class="tbl-th hidden lg:table-cell">Worker</th>
+                    <th class="tbl-th text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in page_obj %}
+                <tr class="tbl-row">
+                    <td class="tbl-td">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 text-xs font-bold flex-shrink-0">
+                                {{ s.patient.first_name|slice:":1" }}{{ s.patient.last_name|slice:":1" }}
+                            </div>
+                            <div class="min-w-0">
+                                <div class="font-semibold text-gray-900 text-sm truncate max-w-36">{{ s.patient.get_full_name }}</div>
+                                <div class="text-xs text-gray-400 truncate">{{ s.patient.national_id }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="tbl-td">
+                        <span class="text-xs font-semibold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg whitespace-nowrap">
+                            {{ s.get_screening_type_display }}
+                        </span>
+                    </td>
+                    <td class="tbl-td">
+                        {% if s.result %}
+                        <span class="badge-{{ s.result_badge_class }}">{{ s.result|capfirst|cut:"_" }}</span>
+                        {% else %}
+                        <span class="text-xs text-gray-400">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="tbl-td hidden md:table-cell">
+                        <span class="badge-{{ s.risk_level }}">{{ s.get_risk_level_display }}</span>
+                    </td>
+                    <td class="tbl-td hidden sm:table-cell text-gray-600 text-sm">
+                        {{ s.screening_date|date:"M d, Y" }}
+                    </td>
+                    <td class="tbl-td">
+                        <span class="badge-{{ s.status }}">{{ s.get_status_display }}</span>
+                    </td>
+                    <td class="tbl-td hidden lg:table-cell text-xs text-gray-500">
+                        {{ s.performed_by.get_full_name|default:"—" }}
+                    </td>
+                    <td class="tbl-td text-right">
+                        <div class="flex items-center justify-end gap-1">
+                            <a href="{% url 'patients:detail' s.patient.pk %}"
+                               class="p-2 rounded-xl hover:bg-emerald-50 text-emerald-600 transition-colors"
+                               title="View patient"><i class="fas fa-eye text-xs"></i></a>
+                            <button onclick="openEditScreeningModal({{ s.pk }})"
+                                    class="p-2 rounded-xl hover:bg-blue-50 text-blue-600 transition-colors"
+                                    title="Edit"><i class="fas fa-pencil text-xs"></i></button>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="px-5 py-14 text-center">
+                        <i class="fas fa-stethoscope text-5xl text-gray-200 mb-3 block"></i>
+                        <p class="text-gray-500 font-semibold text-lg mb-1">No screening records found</p>
+                        {% if query or type_filter or status_filter %}
+                        <p class="text-gray-400 text-sm mb-4">Try adjusting your filters</p>
+                        <a href="{% url 'patients:screening_list' %}" class="btn-secondary inline-flex mr-2">Clear filters</a>
+                        {% endif %}
+                        <button onclick="openAddScreeningModal()" class="btn-primary inline-flex">
+                            <i class="fas fa-plus text-xs"></i> Add First Screening
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if page_obj.has_other_pages %}
+<div class="flex items-center justify-between">
+    <p class="text-sm text-gray-500">
+        Showing {{ page_obj.start_index }}–{{ page_obj.end_index }} of {{ page_obj.paginator.count }} records
+    </p>
+    <div class="flex items-center gap-1">
+        {% if page_obj.has_previous %}
+        <a href="?{% if query %}q={{ query }}&{% endif %}{% if type_filter %}type={{ type_filter }}&{% endif %}{% if status_filter %}status={{ status_filter }}&{% endif %}page={{ page_obj.previous_page_number }}"
+           class="px-3 py-2 text-sm rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-600 transition-colors">
+            <i class="fas fa-chevron-left text-xs"></i>
+        </a>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+            <span class="px-3 py-2 text-sm rounded-xl bg-emerald-600 text-white font-semibold">{{ num }}</span>
+            {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+            <a href="?{% if query %}q={{ query }}&{% endif %}{% if type_filter %}type={{ type_filter }}&{% endif %}{% if status_filter %}status={{ status_filter }}&{% endif %}page={{ num }}"
+               class="px-3 py-2 text-sm rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-600 transition-colors">{{ num }}</a>
+            {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+        <a href="?{% if query %}q={{ query }}&{% endif %}{% if type_filter %}type={{ type_filter }}&{% endif %}{% if status_filter %}status={{ status_filter }}&{% endif %}page={{ page_obj.next_page_number }}"
+           class="px-3 py-2 text-sm rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-600 transition-colors">
+            <i class="fas fa-chevron-right text-xs"></i>
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+
+<!-- ═══════  SCREENING MODAL  ═══════ -->
+<div id="screeningModal" class="bc-modal fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('screeningModal')"></div>
+    <div class="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col max-h-[94vh]">
+
+        <!-- Header -->
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center">
+                    <i class="fas fa-stethoscope text-blue-600"></i>
+                </div>
+                <h2 id="screeningModalTitle" class="text-base font-semibold text-gray-900">Add Screening</h2>
+            </div>
+            <button onclick="closeModal('screeningModal')"
+                    class="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+        </div>
+
+        <!-- Body -->
+        <div class="overflow-y-auto flex-1">
+            <form id="screeningForm" method="POST" action="{% url 'patients:screening_add' %}" class="p-6">
+
+                {% csrf_token %}
+
+                <!-- Section: Patient & Type -->
+                <div class="mb-5">
+                    <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Patient & Screening Type</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="sm:col-span-2">
+                            <label class="form-label">Patient <span class="text-red-500">*</span></label>
+                            <select name="patient" id="screeningPatientSelect" class="form-select">
+                                <option value="">Search by name, phone or ID…</option>
+                                {% for pat in all_patients %}
+                                <option value="{{ pat.pk }}">{{ pat.get_full_name }} — {{ pat.phone }} (ID: {{ pat.national_id }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">Screening Type <span class="text-red-500">*</span></label>
+                            <select name="screening_type" id="screeningTypeSelect" class="form-select"
+                                    onchange="updateResultField(this.value, '')">
+                                <option value="">— Select type —</option>
+                                {% for val, label in screening_type_choices %}
+                                <option value="{{ val }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">Screening Date <span class="text-red-500">*</span></label>
+                            <input type="date" name="screening_date" class="form-input">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: Result & Status -->
+                <div class="mb-5">
+                    <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Result & Risk</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div id="resultFieldWrapper">
+                            <label class="form-label">Result</label>
+                            <input type="text" name="result" id="screeningResultInput"
+                                   class="form-input" placeholder="Select screening type first…" disabled>
+                        </div>
+                        <div>
+                            <label class="form-label">Risk Level</label>
+                            <select name="risk_level" class="form-select">
+                                <option value="low">Low</option>
+                                <option value="medium">Medium</option>
+                                <option value="high">High</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label">Status</label>
+                            <select name="status" class="form-select">
+                                <option value="pending">Pending</option>
+                                <option value="completed">Completed</option>
+                                <option value="referred">Referred</option>
+                                <option value="cancelled">Cancelled</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: Notes -->
+                <div class="mb-2">
+                    <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Clinical Notes</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="form-label">Comments</label>
+                            <textarea name="comments" class="form-textarea" rows="3"
+                                      placeholder="Clinical observations and findings…"></textarea>
+                        </div>
+                        <div>
+                            <label class="form-label">Recommendations</label>
+                            <textarea name="recommendations" class="form-textarea" rows="3"
+                                      placeholder="Treatment or action recommendations…"></textarea>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="form-label">Follow-up Notes</label>
+                                <textarea name="followup_notes" class="form-textarea" rows="2"
+                                          placeholder="Notes for the follow-up visit…"></textarea>
+                            </div>
+                            <div>
+                                <label class="form-label">Next Follow-up Date</label>
+                                <input type="date" name="next_followup_date" class="form-input">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+
+        <!-- Footer -->
+        <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/80 rounded-b-2xl flex-shrink-0">
+            <button type="button" onclick="closeModal('screeningModal')" class="btn-secondary">
+                <i class="fas fa-times text-xs"></i> Cancel
+            </button>
+            <button type="button"
+                    onclick="submitModalForm('screeningForm','screeningModal','Screening record saved!')"
+                    class="btn-primary btn-save">
+                <i class="fas fa-save text-xs"></i> Save Screening
+            </button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+<script>
+// ─── Result maps (dynamic options per screening type) ───
+const RESULT_MAPS = {
+    hiv:                     [['positive','Positive'],['negative','Negative'],['indeterminate','Indeterminate']],
+    malaria:                 [['positive','Positive'],['negative','Negative'],['severe','Severe Malaria']],
+    tuberculosis_tb:         [['positive','Positive'],['negative','Negative'],['suspected','Suspected'],['confirmed','Confirmed']],
+    diabetes:                [['normal','Normal'],['prediabetic','Prediabetic'],['diabetic','Diabetic'],['critical','Critical']],
+    hypertension:            [['normal','Normal'],['elevated','Elevated'],['stage_1','Stage 1'],['stage_2','Stage 2'],['crisis','Hypertensive Crisis']],
+    pregnancy_test:          [['positive','Positive'],['negative','Negative']],
+    cervical_cancer:         [['normal','Normal'],['abnormal','Abnormal'],['precancerous','Precancerous'],['positive','Positive'],['referred','Referred']],
+    breast_cancer:           [['normal','Normal'],['abnormal','Abnormal'],['suspected','Suspected'],['referred','Referred']],
+    bmi_nutrition:           [['underweight','Underweight'],['normal','Normal'],['overweight','Overweight'],['obese','Obese']],
+    mental_health:           [['stable','Stable'],['needs_followup','Needs Follow-up'],['critical','Critical']],
+    hepatitis_b:             [['positive','Positive'],['negative','Negative'],['immune','Immune (Vaccinated)']],
+    hepatitis_c:             [['positive','Positive'],['negative','Negative'],['indeterminate','Indeterminate']],
+    sti_screening:           [['positive','Positive'],['negative','Negative'],['treated','Under Treatment']],
+    cholesterol:             [['normal','Normal'],['borderline','Borderline High'],['high','High'],['very_high','Very High']],
+    sickle_cell:             [['normal','Normal (AA)'],['trait','Trait (AS)'],['disease','Disease (SS)']],
+    vision_screening:        [['normal','Normal'],['mild_impairment','Mild Impairment'],['moderate_impairment','Moderate Impairment'],['severe_impairment','Severe Impairment'],['referred','Referred']],
+    hearing_screening:       [['normal','Normal'],['mild_loss','Mild Loss'],['moderate_loss','Moderate Loss'],['severe_loss','Severe Loss'],['referred','Referred']],
+    covid_19:                [['positive','Positive'],['negative','Negative'],['suspected','Suspected']],
+    urinalysis:              [['normal','Normal'],['abnormal','Abnormal'],['infection_detected','Infection Detected'],['referred','Referred']],
+    blood_group:             [['a_positive','A+'],['a_negative','A-'],['b_positive','B+'],['b_negative','B-'],['ab_positive','AB+'],['ab_negative','AB-'],['o_positive','O+'],['o_negative','O-']],
+    anemia:                  [['normal','Normal'],['mild','Mild Anemia'],['moderate','Moderate Anemia'],['severe','Severe Anemia']],
+    child_malnutrition:      [['normal','Normal'],['mild_malnutrition','Mild Malnutrition'],['moderate_malnutrition','Moderate Malnutrition'],['severe_malnutrition','Severe Malnutrition']],
+    family_planning:         [['counseled','Counseled'],['method_provided','Method Provided'],['referred','Referred'],['declined','Declined']],
+    maternal_risk_assessment:[['low_risk','Low Risk'],['medium_risk','Medium Risk'],['high_risk','High Risk'],['referred','Referred']],
+    other:                   null,
+};
+
+function updateResultField(screeningType, currentValue) {
+    const wrapper = document.getElementById('resultFieldWrapper');
+    const options = RESULT_MAPS[screeningType];
+
+    if (screeningType === '' || screeningType === undefined) {
+        wrapper.innerHTML = `<label class="form-label">Result</label>
+            <input type="text" name="result" id="screeningResultInput"
+                   class="form-input" placeholder="Select screening type first…" disabled>`;
+        return;
+    }
+
+    if (options === null) {
+        // "Other" — free text
+        wrapper.innerHTML = `<label class="form-label">Result</label>
+            <input type="text" name="result" id="screeningResultInput"
+                   class="form-input" placeholder="Enter result…" value="${currentValue || ''}">`;
+    } else {
+        const opts = options.map(([v, l]) =>
+            `<option value="${v}"${v === currentValue ? ' selected' : ''}>${l}</option>`
+        ).join('');
+        wrapper.innerHTML = `<label class="form-label">Result</label>
+            <select name="result" id="screeningResultInput" class="form-select">
+                <option value="">— Select result —</option>${opts}
+            </select>`;
+    }
+}
+
+// ─── Tom Select initialisation ───
+let patientTS;
+
+document.addEventListener('DOMContentLoaded', function () {
+    patientTS = new TomSelect('#screeningPatientSelect', {
+        maxOptions: 300,
+        placeholder: 'Search by name, phone or ID…',
+        render: {
+            no_results: () => '<div class="no-results">No patients found</div>',
+        },
+    });
+});
+
+// ─── Modal open helpers ───
+function openAddScreeningModal() {
+    const form = document.getElementById('screeningForm');
+    document.getElementById('screeningModalTitle').textContent = 'Add Screening Record';
+    form.action = "{% url 'patients:screening_add' %}";
+    form.reset();
+    if (patientTS) patientTS.clear();
+    // Reset result field
+    document.getElementById('screeningTypeSelect').value = '';
+    updateResultField('', '');
+    // Default date to today
+    form.querySelector('[name="screening_date"]').value = new Date().toISOString().split('T')[0];
+    clearModalErrors('screeningModal');
+    openModal('screeningModal');
+}
+
+async function openEditScreeningModal(id) {
+    document.getElementById('screeningModalTitle').textContent = 'Edit Screening Record';
+    clearModalErrors('screeningModal');
+
+    const data = await fetch(`/patients/screenings/${id}/json/`).then(r => r.json());
+    const form = document.getElementById('screeningForm');
+    form.action = `/patients/screenings/${id}/edit/`;
+
+    // Patient — add option if not already present, then select
+    if (patientTS) {
+        if (!patientTS.options[data.patient]) {
+            patientTS.addOption({ value: data.patient, text: data.patient_text });
+        }
+        patientTS.setValue(data.patient);
+    }
+
+    // Screening type → triggers result field rebuild
+    const typeSelect = document.getElementById('screeningTypeSelect');
+    typeSelect.value = data.screening_type;
+    updateResultField(data.screening_type, data.result);
+
+    // All other scalar fields
+    ['risk_level', 'screening_date', 'status', 'comments',
+     'recommendations', 'followup_notes', 'next_followup_date'].forEach(key => {
+        const el = form.querySelector(`[name="${key}"]`);
+        if (el) el.value = data[key] || '';
+    });
+
+    openModal('screeningModal');
+}
+</script>
+{% endblock %}

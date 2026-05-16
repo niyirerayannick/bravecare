@@ -1,0 +1,17 @@
+{% extends 'emails/_base.html' %}
+{% block content %}
+<p class="greeting">Password Reset Request</p>
+<p class="text">Hello {{ user.get_full_name|default:user.username }}, we received a request to reset the password for your BraveCare Outreach account. Enter the code below to proceed.</p>
+
+<div class="otp-box">
+  <div style="font-size:12px;font-weight:600;color:#059669;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Password Reset Code</div>
+  <div class="otp-code">{{ code }}</div>
+  <div class="otp-note">This code expires in <strong>{{ expiry_minutes }} minutes</strong> and can only be used once.</div>
+</div>
+
+<div class="warning-box">
+  &#9888;&nbsp;<strong>Did not request this?</strong> If you did not ask to reset your password, ignore this email. Your password will remain unchanged. Consider contacting your administrator if you receive this unexpectedly.
+</div>
+
+<p class="text" style="font-size:13px">For security, this reset code will expire automatically and cannot be reused once verified.</p>
+{% endblock %}

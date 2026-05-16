@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% block title %}Outreach Campaigns — BraveCare{% endblock %}
+{% block page_title %}Outreach Campaigns{% endblock %}
+{% block page_subtitle %}Plan and manage community health outreach programs{% endblock %}
+
+{% block content %}
+
+<!-- Stats -->
+<div class="grid grid-cols-3 gap-4 mb-5">
+    <div class="bg-emerald-50 rounded-2xl p-4 border border-emerald-100 text-center">
+        <div class="text-2xl font-bold text-emerald-700">{{ active_count }}</div>
+        <div class="text-xs text-emerald-600 mt-0.5 font-medium">Active</div>
+    </div>
+    <div class="bg-blue-50 rounded-2xl p-4 border border-blue-100 text-center">
+        <div class="text-2xl font-bold text-blue-700">{{ planned_count }}</div>
+        <div class="text-xs text-blue-600 mt-0.5 font-medium">Planned</div>
+    </div>
+    <div class="bg-gray-50 rounded-2xl p-4 border border-gray-200 text-center">
+        <div class="text-2xl font-bold text-gray-700">{{ completed_count }}</div>
+        <div class="text-xs text-gray-500 mt-0.5 font-medium">Completed</div>
+    </div>
+</div>
+
+<!-- Filters + Add -->
+<div class="card p-4 mb-5">
+    <form method="GET" class="flex flex-wrap gap-3 items-center">
+        <div class="flex-1 min-w-52 relative">
+            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+            <input type="text" name="q" value="{{ query }}"
+                   placeholder="Search campaigns by title or location…"
+                   class="form-input pl-9">
+        </div>
+        <select name="status" class="form-select w-auto min-w-40">
+            <option value="">All Statuses</option>
+            <option value="active"    {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+            <option value="planned"   {% if status_filter == 'planned' %}selected{% endif %}>Planned</option>
+            <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Completed</option>
+            <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Cancelled</option>
+        </select>
+        <button type="submit" class="btn-secondary">
+            <i class="fas fa-filter text-xs"></i> Filter
+        </button>
+        {% if query or status_filter %}
+        <a href="{% url 'outreach:list' %}" class="btn-secondary">
+            <i class="fas fa-times text-xs"></i> Clear
+        </a>
+        {% endif %}
+        <button type="button" onclick="openAddCampaignModal()" class="btn-primary ml-auto">
+            <i class="fas fa-plus text-xs"></i> New Campaign
+        </button>
+    </form>
+</div>
+
+<!-- Campaign Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+    {% for c in campaigns %}
+    <div class="card hover:shadow-md transition-shadow group">
+        <div class="p-5">
+            <div class="flex items-start justify-between gap-3 mb-3">
+                <div class="w-11 h-11 rounded-2xl bg-emerald-50 group-hover:bg-emerald-100 flex items-center justify-center transition-colors flex-shrink-0">
+                    <i class="fas fa-broadcast-tower text-emerald-600 text-lg"></i>
+                </div>
+                <span class="badge-{{ c.status }}">{{ c.get_status_display }}</span>
+            </div>
+
+            <h3 class="text-sm font-semibold text-gray-900 mb-1 leading-snug">{{ c.title }}</h3>
+            <p class="text-xs text-gray-500 mb-3 line-clamp-2">{{ c.description }}</p>
+
+            <div class="space-y-1.5 text-xs text-gray-500 mb-4">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-map-marker-alt text-gray-400 w-3.5 text-center"></i>
+                    <span class="truncate">{{ c.display_location }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-calendar text-gray-400 w-3.5 text-center"></i>
+                    <span>{{ c.start_date|date:"M d" }} – {{ c.end_date|date:"M d, Y" }}</span>
+                </div>
+            </div>
+
+            {% if c.target_population > 0 %}
+            <div>
+                <div class="flex items-center justify-between text-xs text-gray-500 mb-1.5">
+                    <span>Progress</span>
+                    <span class="font-semibold text-gray-700">{{ c.reached_count }} / {{ c.target_population }}</span>
+                </div>
+                <div class="w-full bg-gray-100 rounded-full h-1.5">
+                    <div class="bg-emerald-500 h-1.5 rounded-full transition-all duration-500"
+                         style="width: {{ c.progress_percent }}%"></div>
+                </div>
+                <div class="text-xs text-gray-400 mt-1 text-right">{{ c.progress_percent }}%</div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="px-5 py-3 border-t border-gray-100 bg-gray-50/60 rounded-b-2xl flex items-center justify-between">
+            <span class="text-xs text-gray-400">{{ c.created_at|date:"M d, Y" }}</span>
+            <button onclick="openEditCampaignModal({{ c.pk }})"
+                    class="text-xs text-emerald-600 hover:text-emerald-700 font-semibold flex items-center gap-1 transition-colors">
+                <i class="fas fa-pencil text-xs"></i> Edit
+            </button>
+        </div>
+    </div>
+    {% empty %}
+    <div class="card md:col-span-2 xl:col-span-3 py-16 text-center">
+        <i class="fas fa-broadcast-tower text-5xl text-gray-200 mb-4 block"></i>
+        <p class="text-gray-500 font-semibold text-lg mb-1">No campaigns yet</p>
+        <p class="text-gray-400 text-sm mb-5">Create your first outreach campaign</p>
+        <button onclick="openAddCampaignModal()" class="btn-primary inline-flex">
+            <i class="fas fa-plus text-xs"></i> Create Campaign
+        </button>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Campaign modal is included via base.html's {% include 'outreach/modal.html' %} -->
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ campaign.title }} — BraveCare{% endblock %}
+{% block page_title %}Campaign Details{% endblock %}
+{% block page_subtitle %}Outreach campaign information and progress{% endblock %}
+
+{% block content %}
+<div class="mb-5">
+    <a href="{% url 'outreach:list' %}" class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-emerald-600">
+        <i class="fas fa-arrow-left text-xs"></i> Back to Campaigns
+    </a>
+</div>
+
+<div class="card p-6 max-w-2xl">
+    <div class="flex items-start justify-between gap-4 mb-5">
+        <div class="flex items-center gap-4">
+            <div class="w-14 h-14 rounded-2xl bg-emerald-100 flex items-center justify-center">
+                <i class="fas fa-broadcast-tower text-emerald-600 text-2xl"></i>
+            </div>
+            <div>
+                <h2 class="text-xl font-bold text-gray-900">{{ campaign.title }}</h2>
+                <p class="text-gray-500 text-sm mt-1">{{ campaign.location }}</p>
+            </div>
+        </div>
+        <span class="badge-{{ campaign.status }} text-sm px-3 py-1">{{ campaign.get_status_display }}</span>
+    </div>
+
+    <p class="text-gray-700 text-sm mb-5">{{ campaign.description }}</p>
+
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+        <div class="bg-gray-50 rounded-xl p-3">
+            <div class="text-xs text-gray-500">Start Date</div>
+            <div class="text-sm font-semibold text-gray-900 mt-1">{{ campaign.start_date|date:"M d, Y" }}</div>
+        </div>
+        <div class="bg-gray-50 rounded-xl p-3">
+            <div class="text-xs text-gray-500">End Date</div>
+            <div class="text-sm font-semibold text-gray-900 mt-1">{{ campaign.end_date|date:"M d, Y" }}</div>
+        </div>
+        <div class="bg-gray-50 rounded-xl p-3">
+            <div class="text-xs text-gray-500">Target</div>
+            <div class="text-sm font-semibold text-gray-900 mt-1">{{ campaign.target_population }}</div>
+        </div>
+        <div class="bg-gray-50 rounded-xl p-3">
+            <div class="text-xs text-gray-500">Reached</div>
+            <div class="text-sm font-semibold text-emerald-700 mt-1">{{ campaign.reached_count }}</div>
+        </div>
+    </div>
+
+    {% if campaign.target_population > 0 %}
+    <div class="mb-5">
+        <div class="flex items-center justify-between text-sm text-gray-600 mb-2">
+            <span>Progress</span>
+            <span class="font-semibold">{{ campaign.progress_percent }}%</span>
+        </div>
+        <div class="w-full bg-gray-100 rounded-full h-3">
+            <div class="bg-emerald-500 h-3 rounded-full" style="width: {{ campaign.progress_percent }}%"></div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="flex gap-3 pt-4 border-t border-gray-100">
+        <a href="{% url 'outreach:edit' campaign.pk %}" class="btn-primary">
+            <i class="fas fa-edit text-xs"></i> Edit Campaign
+        </a>
+        <a href="{% url 'outreach:list' %}" class="btn-secondary">Back to List</a>
+    </div>
+</div>
+{% endblock %}

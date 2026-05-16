@@ -1,0 +1,16 @@
+Django==4.2.7
+Pillow==10.1.0
+python-decouple==3.8
+
+# Database
+psycopg2-binary==2.9.9
+dj-database-url==2.1.0
+
+# Production server
+gunicorn==21.2.0
+
+# Static files
+whitenoise==6.6.0
+
+# Optional — Excel export (already used in screenings)
+openpyxl==3.1.2

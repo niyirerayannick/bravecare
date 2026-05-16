@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} — BraveCare{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block page_subtitle %}{% if patient %}Update existing patient record{% else %}Register a new patient in the system{% endif %}{% endblock %}
+
+{% block content %}
+
+<div class="mb-5">
+    <a href="{% url 'patients:list' %}" class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-emerald-600 transition-colors">
+        <i class="fas fa-arrow-left text-xs"></i> Back to Patients
+    </a>
+</div>
+
+<div class="max-w-3xl">
+    <div class="card p-6">
+        <div class="flex items-center gap-3 mb-6 pb-5 border-b border-gray-100">
+            <div class="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
+                <i class="fas fa-user-plus text-emerald-600 text-lg"></i>
+            </div>
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900">{{ title }}</h2>
+                <p class="text-sm text-gray-500">Fill in the patient information below</p>
+            </div>
+        </div>
+
+        <form method="POST" class="space-y-5">
+            {% csrf_token %}
+
+            <!-- Personal Info -->
+            <div>
+                <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Personal Information</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">First Name <span class="text-red-500">*</span></label>
+                        {{ form.first_name }}
+                        {% if form.first_name.errors %}
+                        <p class="text-red-500 text-xs mt-1">{{ form.first_name.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Last Name <span class="text-red-500">*</span></label>
+                        {{ form.last_name }}
+                        {% if form.last_name.errors %}
+                        <p class="text-red-500 text-xs mt-1">{{ form.last_name.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Date of Birth <span class="text-red-500">*</span></label>
+                        {{ form.date_of_birth }}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Gender <span class="text-red-500">*</span></label>
+                        {{ form.gender }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact & ID -->
+            <div>
+                <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Contact & Identification</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Phone Number <span class="text-red-500">*</span></label>
+                        {{ form.phone }}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">National ID <span class="text-red-500">*</span></label>
+                        {{ form.national_id }}
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Location / Village</label>
+                        {{ form.location }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Clinical -->
+            <div>
+                <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Clinical Assessment</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Risk Level</label>
+                        {{ form.risk_level }}
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Notes</label>
+                        {{ form.notes }}
+                    </div>
+                </div>
+            </div>
+
+            {% if form.non_field_errors %}
+            <div class="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+                {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="flex items-center gap-3 pt-4 border-t border-gray-100">
+                <button type="submit" class="btn-primary px-6">
+                    <i class="fas fa-save text-xs"></i>
+                    {% if patient %}Update Patient{% else %}Save Patient{% endif %}
+                </button>
+                <a href="{% if patient %}{% url 'patients:detail' patient.pk %}{% else %}{% url 'patients:list' %}{% endif %}"
+                   class="btn-secondary px-6">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,232 @@
+{% extends 'base.html' %}
+
+{% block title %}Reports — BraveCare{% endblock %}
+{% block page_title %}Reports & Analytics{% endblock %}
+{% block page_subtitle %}Data-driven insights for healthcare outreach decisions{% endblock %}
+
+{% block content %}
+
+<!-- Summary KPIs -->
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+    <div class="kpi-card">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
+                <i class="fas fa-users text-emerald-600"></i>
+            </div>
+            <div>
+                <div class="text-xl font-bold text-gray-900">{{ total_patients }}</div>
+                <div class="text-xs text-gray-500">Total Patients</div>
+            </div>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
+                <i class="fas fa-stethoscope text-blue-600"></i>
+            </div>
+            <div>
+                <div class="text-xl font-bold text-gray-900">{{ total_screenings }}</div>
+                <div class="text-xs text-gray-500">Total Screenings</div>
+            </div>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
+                <i class="fas fa-broadcast-tower text-amber-600"></i>
+            </div>
+            <div>
+                <div class="text-xl font-bold text-gray-900">{{ total_campaigns }}</div>
+                <div class="text-xs text-gray-500">Campaigns</div>
+            </div>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
+                <i class="fas fa-hands-helping text-purple-600"></i>
+            </div>
+            <div>
+                <div class="text-xl font-bold text-gray-900">{{ total_volunteers }}</div>
+                <div class="text-xs text-gray-500">Active Volunteers</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 xl:grid-cols-2 gap-5 mb-5">
+
+    <!-- Patient Risk Distribution -->
+    <div class="card p-5">
+        <h3 class="text-base font-semibold text-gray-900 mb-4">Patient Risk Distribution</h3>
+        <div class="h-48">
+            <canvas id="riskChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Follow-up Status -->
+    <div class="card p-5">
+        <h3 class="text-base font-semibold text-gray-900 mb-4">Follow-up Status Breakdown</h3>
+        <div class="h-48">
+            <canvas id="followupStatusChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Screening Results -->
+    <div class="card p-5">
+        <h3 class="text-base font-semibold text-gray-900 mb-4">Screening Results</h3>
+        <div class="h-48">
+            <canvas id="screeningChart"></canvas>
+        </div>
+    </div>
+
+    <!-- MCH Services -->
+    <div class="card p-5">
+        <h3 class="text-base font-semibold text-gray-900 mb-4">MCH Service Distribution</h3>
+        <div class="h-48">
+            <canvas id="mchChart"></canvas>
+        </div>
+    </div>
+
+</div>
+
+<!-- Data Tables -->
+<div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
+
+    <!-- Patient by Risk -->
+    <div class="card">
+        <div class="px-5 py-4 border-b border-gray-100">
+            <h3 class="text-base font-semibold text-gray-900">Patients by Risk Level</h3>
+        </div>
+        <div class="p-4 space-y-3">
+            {% for row in patient_by_risk %}
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-2.5 h-2.5 rounded-full
+                        {% if row.risk_level == 'high' %}bg-red-500{% elif row.risk_level == 'medium' %}bg-amber-500{% else %}bg-emerald-500{% endif %}">
+                    </div>
+                    <span class="text-sm text-gray-700 capitalize">{{ row.risk_level }} Risk</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="w-24 bg-gray-100 rounded-full h-2">
+                        <div class="h-2 rounded-full
+                            {% if row.risk_level == 'high' %}bg-red-500{% elif row.risk_level == 'medium' %}bg-amber-500{% else %}bg-emerald-500{% endif %}"
+                             style="width: {% if total_patients > 0 %}{% widthratio row.count total_patients 100 %}{% else %}0{% endif %}%"></div>
+                    </div>
+                    <span class="text-sm font-semibold text-gray-900 w-6 text-right">{{ row.count }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Campaign Stats -->
+    <div class="card">
+        <div class="px-5 py-4 border-b border-gray-100">
+            <h3 class="text-base font-semibold text-gray-900">Campaign Status Overview</h3>
+        </div>
+        <div class="p-4 space-y-3">
+            {% for row in campaign_stats %}
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-2.5 h-2.5 rounded-full
+                        {% if row.status == 'active' %}bg-emerald-500{% elif row.status == 'planned' %}bg-blue-500{% elif row.status == 'completed' %}bg-gray-400{% else %}bg-red-500{% endif %}">
+                    </div>
+                    <span class="text-sm text-gray-700 capitalize">{{ row.status }}</span>
+                </div>
+                <span class="text-sm font-semibold text-gray-900">{{ row.count }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const chartDefaults = {
+    plugins: {
+        legend: {
+            position: 'right',
+            labels: { boxWidth: 10, padding: 12, font: { size: 11 } }
+        }
+    },
+    responsive: true,
+    maintainAspectRatio: false,
+};
+
+// Risk Distribution
+new Chart(document.getElementById('riskChart'), {
+    type: 'doughnut',
+    data: {
+        labels: [{% for r in patient_by_risk %}'{{ r.risk_level|capfirst }} Risk'{% if not forloop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            data: [{% for r in patient_by_risk %}{{ r.count }}{% if not forloop.last %},{% endif %}{% endfor %}],
+            backgroundColor: ['#f87171', '#fbbf24', '#34d399'],
+            borderWidth: 0,
+        }]
+    },
+    options: { ...chartDefaults, cutout: '65%' }
+});
+
+// Follow-up Status
+new Chart(document.getElementById('followupStatusChart'), {
+    type: 'bar',
+    data: {
+        labels: [{% for f in followup_by_status %}'{{ f.status|capfirst }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            data: [{% for f in followup_by_status %}{{ f.count }}{% if not forloop.last %},{% endif %}{% endfor %}],
+            backgroundColor: ['#10b981', '#f59e0b', '#f87171', '#60a5fa'],
+            borderRadius: 6,
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+            x: { grid: { display: false }, border: { display: false } },
+            y: { grid: { color: '#f1f5f9' }, border: { display: false }, ticks: { stepSize: 1 } }
+        }
+    }
+});
+
+// Screening Results
+new Chart(document.getElementById('screeningChart'), {
+    type: 'doughnut',
+    data: {
+        labels: [{% for s in screening_by_result %}'{{ s.result|capfirst }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            data: [{% for s in screening_by_result %}{{ s.count }}{% if not forloop.last %},{% endif %}{% endfor %}],
+            backgroundColor: ['#34d399', '#f87171', '#fbbf24', '#60a5fa'],
+            borderWidth: 0,
+        }]
+    },
+    options: { ...chartDefaults, cutout: '65%' }
+});
+
+// MCH Services
+new Chart(document.getElementById('mchChart'), {
+    type: 'bar',
+    data: {
+        labels: [{% for m in mch_by_service %}'{{ m.service_type|capfirst }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            data: [{% for m in mch_by_service %}{{ m.count }}{% if not forloop.last %},{% endif %}{% endfor %}],
+            backgroundColor: '#ec4899',
+            borderRadius: 6,
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+            x: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 10 } } },
+            y: { grid: { color: '#f1f5f9' }, border: { display: false }, ticks: { stepSize: 1 } }
+        }
+    }
+});
+</script>
+{% endblock %}

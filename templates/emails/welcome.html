@@ -1,0 +1,29 @@
+{% extends 'emails/_base.html' %}
+{% block content %}
+<p class="greeting">Welcome to BraveCare Outreach, {{ user.get_full_name|default:user.username }}!</p>
+<p class="text">Your account has been created by your system administrator. You can now sign in using the credentials below.</p>
+
+<div class="cred-box">
+  <div class="cred-row">
+    <span class="cred-label">Username</span>
+    <span class="cred-value">{{ user.username }}</span>
+  </div>
+  <div class="cred-row">
+    <span class="cred-label">Temporary Password</span>
+    <span class="cred-value">{{ temp_password }}</span>
+  </div>
+</div>
+
+<div style="text-align:center;margin:28px 0">
+  <a href="{{ login_url }}" class="btn">&#8594;&nbsp; Sign In to BraveCare</a>
+</div>
+
+<div class="warning-box">
+  &#9888;&nbsp;<strong>Important:</strong> You will be required to change this temporary password on your first login. Keep your credentials safe and do not share them with anyone.
+</div>
+
+<p class="text">After signing in you will also be asked to verify your identity with a one-time code sent to this email address.</p>
+
+<div class="divider"></div>
+<p class="text" style="margin-bottom:0;font-size:13px">If you believe you received this email by mistake, please contact your BraveCare administrator immediately.</p>
+{% endblock %}

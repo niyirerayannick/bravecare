@@ -1,0 +1,590 @@
+{% extends 'base.html' %}
+{% block title %}{{ patient.get_full_name }} — BraveCare{% endblock %}
+{% block page_title %}Patient Profile{% endblock %}
+{% block page_subtitle %}Full patient history, screenings and MCH records{% endblock %}
+
+{% block content %}
+
+<div class="mb-5">
+    <a href="{% url 'patients:list' %}"
+       class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-emerald-600 transition-colors font-medium">
+        <i class="fas fa-arrow-left text-xs"></i> Back to Patients
+    </a>
+</div>
+
+<!-- Patient Header Card -->
+<div class="card p-6 mb-5">
+    <div class="flex flex-col sm:flex-row sm:items-start gap-5">
+        <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-700
+                    flex items-center justify-center text-white text-2xl font-bold shadow-lg flex-shrink-0">
+            {{ patient.first_name|slice:":1" }}{{ patient.last_name|slice:":1" }}
+        </div>
+        <div class="flex-1">
+            <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900">{{ patient.get_full_name }}</h2>
+                    <div class="flex flex-wrap items-center gap-3 mt-1.5 text-sm text-gray-500">
+                        <span><i class="fas fa-id-card text-gray-400 mr-1"></i>{{ patient.national_id }}</span>
+                        <span><i class="fas fa-map-marker-alt text-gray-400 mr-1"></i>{{ patient.display_location }}</span>
+                        <span><i class="fas fa-phone text-gray-400 mr-1"></i>{{ patient.phone }}</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="badge-{{ patient.risk_level }} text-sm px-3 py-1">
+                        <i class="fas fa-exclamation-circle mr-1 text-xs"></i>{{ patient.get_risk_level_display }} Risk
+                    </span>
+                    <button onclick="openEditPatientModalDetail({{ patient.pk }})" class="btn-secondary">
+                        <i class="fas fa-pencil text-xs"></i> Edit
+                    </button>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div class="bg-gray-50 rounded-xl p-3">
+                    <div class="text-xs text-gray-500 mb-0.5">Age</div>
+                    <div class="font-semibold text-gray-900">{{ patient.age }} years</div>
+                </div>
+                <div class="bg-gray-50 rounded-xl p-3">
+                    <div class="text-xs text-gray-500 mb-0.5">Gender</div>
+                    <div class="font-semibold text-gray-900">{{ patient.get_gender_display }}</div>
+                </div>
+                <div class="bg-gray-50 rounded-xl p-3">
+                    <div class="text-xs text-gray-500 mb-0.5">Date of Birth</div>
+                    <div class="font-semibold text-gray-900 text-sm">{{ patient.date_of_birth|date:"M d, Y" }}</div>
+                </div>
+                <div class="bg-gray-50 rounded-xl p-3">
+                    <div class="text-xs text-gray-500 mb-0.5">Registered</div>
+                    <div class="font-semibold text-gray-900 text-sm">{{ patient.created_at|date:"M d, Y" }}</div>
+                </div>
+            </div>
+            {% if patient.notes %}
+            <div class="mt-3 pt-3 border-t border-gray-100 text-sm text-gray-500 italic">{{ patient.notes }}</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
+
+    <!-- Screenings -->
+    <div class="card">
+        <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h3 class="font-semibold text-gray-900 flex items-center gap-2 text-sm">
+                <i class="fas fa-stethoscope text-blue-500"></i> Screening History
+            </h3>
+            <button onclick="openAddScreeningForPatient({{ patient.pk }})"
+                    class="text-xs text-emerald-600 hover:text-emerald-700 font-semibold flex items-center gap-1">
+                <i class="fas fa-plus text-xs"></i> Add
+            </button>
+        </div>
+        <div class="divide-y divide-gray-50">
+            {% for s in screenings %}
+            <div class="flex items-start gap-3 p-4 hover:bg-gray-50/60 transition-colors">
+                <div class="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
+                    <i class="fas fa-vial text-blue-500 text-xs"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="text-sm font-semibold text-gray-900">{{ s.get_screening_type_display }}</span>
+                        <span class="badge-{{ s.status }} text-xs">{{ s.get_status_display }}</span>
+                    </div>
+                    <div class="text-xs text-gray-400 mt-0.5">{{ s.screening_date|date:"M d, Y" }}
+                        {% if s.next_followup_date %} · Follow-up: {{ s.next_followup_date|date:"M d, Y" }}{% endif %}
+                    </div>
+                    {% if s.comments %}<div class="text-xs text-gray-500 mt-1 truncate">{{ s.comments }}</div>{% elif s.notes %}<div class="text-xs text-gray-500 mt-1 truncate">{{ s.notes }}</div>{% endif %}
+                </div>
+                <div class="flex items-center gap-1.5 flex-shrink-0">
+                    {% if s.result %}<span class="badge-{{ s.result_badge_class }}">{{ s.result|capfirst|cut:"_" }}</span>{% endif %}
+                    <button onclick="openEditScreeningDetailModal({{ s.pk }})"
+                            class="p-1.5 rounded-lg hover:bg-blue-50 text-blue-500 transition-colors">
+                        <i class="fas fa-pencil text-xs"></i>
+                    </button>
+                </div>
+            </div>
+            {% empty %}
+            <div class="p-8 text-center text-sm text-gray-400">
+                <i class="fas fa-stethoscope text-3xl text-gray-200 mb-2 block"></i>
+                No screenings yet
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Follow-ups -->
+    <div class="card">
+        <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h3 class="font-semibold text-gray-900 flex items-center gap-2 text-sm">
+                <i class="fas fa-calendar-check text-amber-500"></i> Follow-up Records
+            </h3>
+            <button onclick="openAddFollowupForPatient({{ patient.pk }})"
+                    class="text-xs text-emerald-600 hover:text-emerald-700 font-semibold flex items-center gap-1">
+                <i class="fas fa-plus text-xs"></i> Schedule
+            </button>
+        </div>
+        <div class="divide-y divide-gray-50">
+            {% for f in followups %}
+            <div class="flex items-start gap-3 p-4 hover:bg-gray-50/60 transition-colors">
+                <div class="w-8 h-8 rounded-xl bg-amber-50 flex items-center justify-center flex-shrink-0">
+                    <i class="fas fa-calendar text-amber-500 text-xs"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="text-sm font-semibold text-gray-900 truncate">{{ f.service }}</div>
+                    <div class="text-xs text-gray-400 mt-0.5">Due: {{ f.due_date|date:"M d, Y" }}</div>
+                </div>
+                <div class="flex items-center gap-1.5 flex-shrink-0">
+                    <span class="badge-{{ f.status }}">{{ f.get_status_display }}</span>
+                    <button onclick="openEditFollowupModal({{ f.pk }})"
+                            class="p-1.5 rounded-lg hover:bg-blue-50 text-blue-500 transition-colors">
+                        <i class="fas fa-pencil text-xs"></i>
+                    </button>
+                </div>
+            </div>
+            {% empty %}
+            <div class="p-8 text-center text-sm text-gray-400">
+                <i class="fas fa-calendar text-3xl text-gray-200 mb-2 block"></i>
+                No follow-ups yet
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- MCH Records -->
+    <div class="card xl:col-span-2">
+        <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h3 class="font-semibold text-gray-900 flex items-center gap-2 text-sm">
+                <i class="fas fa-baby text-pink-500"></i> Maternal &amp; Child Health Records
+            </h3>
+            <button onclick="openAddMCHModal({{ patient.pk }})"
+                    class="text-xs text-emerald-600 hover:text-emerald-700 font-semibold flex items-center gap-1">
+                <i class="fas fa-plus text-xs"></i> Add MCH Record
+            </button>
+        </div>
+        <div class="overflow-x-auto">
+            {% if mch_records %}
+            <table class="w-full">
+                <thead>
+                    <tr>
+                        <th class="tbl-th">Service Type</th>
+                        <th class="tbl-th">Visit Date</th>
+                        <th class="tbl-th">Next Follow-up</th>
+                        <th class="tbl-th">Notes</th>
+                        <th class="tbl-th text-right">Edit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in mch_records %}
+                    <tr class="tbl-row">
+                        <td class="tbl-td font-medium text-gray-900">{{ m.get_service_type_display }}</td>
+                        <td class="tbl-td text-gray-600">{{ m.visit_date|date:"M d, Y" }}</td>
+                        <td class="tbl-td text-gray-600">
+                            {% if m.next_followup_date %}{{ m.next_followup_date|date:"M d, Y" }}{% else %}—{% endif %}
+                        </td>
+                        <td class="tbl-td text-xs text-gray-500 max-w-40">
+                            <span class="truncate block">{{ m.notes|default:"—" }}</span>
+                        </td>
+                        <td class="tbl-td text-right">
+                            <button onclick="openEditMCHModal({{ m.pk }})"
+                                    class="p-1.5 rounded-lg hover:bg-blue-50 text-blue-500 transition-colors">
+                                <i class="fas fa-pencil text-xs"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="p-8 text-center text-sm text-gray-400">
+                <i class="fas fa-baby text-3xl text-gray-200 mb-2 block"></i>
+                No MCH records yet
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+
+
+<!-- ── PATIENT EDIT MODAL (inline for detail page) ── -->
+<div id="patientDetailModal" class="bc-modal fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('patientDetailModal')"></div>
+    <div class="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col max-h-[92vh]">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center">
+                    <i class="fas fa-user-edit text-emerald-600"></i>
+                </div>
+                <h2 class="text-base font-semibold text-gray-900">Edit Patient</h2>
+            </div>
+            <button onclick="closeModal('patientDetailModal')"
+                    class="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100 text-gray-400 transition-colors">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+        </div>
+        <div class="overflow-y-auto flex-1">
+            <form id="patientDetailForm" method="POST" action="{% url 'patients:edit' patient.pk %}" class="p-6">
+                {% csrf_token %}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div><label class="form-label">First Name</label><input type="text" name="first_name" value="{{ patient.first_name }}" class="form-input"></div>
+                    <div><label class="form-label">Last Name</label><input type="text" name="last_name" value="{{ patient.last_name }}" class="form-input"></div>
+                    <div><label class="form-label">Date of Birth</label><input type="date" name="date_of_birth" value="{{ patient.date_of_birth|date:'Y-m-d' }}" class="form-input"></div>
+                    <div><label class="form-label">Gender</label>
+                        <select name="gender" class="form-select">
+                            <option value="M" {% if patient.gender == 'M' %}selected{% endif %}>Male</option>
+                            <option value="F" {% if patient.gender == 'F' %}selected{% endif %}>Female</option>
+                            <option value="O" {% if patient.gender == 'O' %}selected{% endif %}>Other</option>
+                        </select>
+                    </div>
+                    <div><label class="form-label">Phone</label><input type="text" name="phone" value="{{ patient.phone }}" class="form-input"></div>
+                    <div><label class="form-label">National ID</label><input type="text" name="national_id" value="{{ patient.national_id }}" class="form-input"></div>
+                    <div class="sm:col-span-2"><label class="form-label">Location</label><input type="text" name="location" value="{{ patient.location }}" class="form-input"></div>
+                    <div><label class="form-label">Risk Level</label>
+                        <select name="risk_level" class="form-select">
+                            <option value="low"    {% if patient.risk_level == 'low' %}selected{% endif %}>Low</option>
+                            <option value="medium" {% if patient.risk_level == 'medium' %}selected{% endif %}>Medium</option>
+                            <option value="high"   {% if patient.risk_level == 'high' %}selected{% endif %}>High</option>
+                        </select>
+                    </div>
+                    <div class="sm:col-span-2"><label class="form-label">Notes</label><textarea name="notes" class="form-textarea" rows="2">{{ patient.notes }}</textarea></div>
+                </div>
+            </form>
+        </div>
+        <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/80 rounded-b-2xl flex-shrink-0">
+            <button type="button" onclick="closeModal('patientDetailModal')" class="btn-secondary"><i class="fas fa-times text-xs"></i> Cancel</button>
+            <button type="button" onclick="submitModalForm('patientDetailForm','patientDetailModal','Patient updated!')" class="btn-primary btn-save"><i class="fas fa-save text-xs"></i> Save Changes</button>
+        </div>
+    </div>
+</div>
+
+
+<!-- ── MCH MODAL ── -->
+<div id="mchModal" class="bc-modal fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('mchModal')"></div>
+    <div class="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[92vh]">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-pink-100 flex items-center justify-center">
+                    <i class="fas fa-baby text-pink-600"></i>
+                </div>
+                <h2 id="mchModalTitle" class="text-base font-semibold text-gray-900">Add MCH Record</h2>
+            </div>
+            <button onclick="closeModal('mchModal')"
+                    class="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100 text-gray-400 transition-colors">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+        </div>
+        <div class="overflow-y-auto flex-1">
+            <form id="mchForm" method="POST" action="{% url 'patients:mch_add' %}" class="p-6 space-y-4">
+                {% csrf_token %}
+                <input type="hidden" name="patient" id="mchPatientField" value="{{ patient.pk }}">
+                <div>
+                    <label class="form-label">Service Type <span class="text-red-500">*</span></label>
+                    <select name="service_type" class="form-select">
+                        <option value="antenatal">Antenatal Care</option>
+                        <option value="postnatal">Postnatal Care</option>
+                        <option value="immunization">Immunization</option>
+                        <option value="nutrition">Nutrition Support</option>
+                        <option value="family_planning">Family Planning</option>
+                        <option value="child_growth">Child Growth Monitoring</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="form-label">Visit Date <span class="text-red-500">*</span></label>
+                        <input type="date" name="visit_date" class="form-input">
+                    </div>
+                    <div>
+                        <label class="form-label">Next Follow-up Date</label>
+                        <input type="date" name="next_followup_date" class="form-input">
+                    </div>
+                </div>
+                <div>
+                    <label class="form-label">Notes</label>
+                    <textarea name="notes" class="form-textarea" rows="2" placeholder="Clinical notes…"></textarea>
+                </div>
+            </form>
+        </div>
+        <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/80 rounded-b-2xl flex-shrink-0">
+            <button type="button" onclick="closeModal('mchModal')" class="btn-secondary"><i class="fas fa-times text-xs"></i> Cancel</button>
+            <button type="button" onclick="submitModalForm('mchForm','mchModal','MCH record saved!')" class="btn-primary btn-save"><i class="fas fa-save text-xs"></i> Save Record</button>
+        </div>
+    </div>
+</div>
+
+
+<!-- ── SCREENING MODAL (detail page: add & edit) ── -->
+<div id="screeningDetailModal" class="bc-modal fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('screeningDetailModal')"></div>
+    <div class="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-xl flex flex-col max-h-[94vh]">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center">
+                    <i class="fas fa-stethoscope text-blue-600"></i>
+                </div>
+                <h2 id="screeningDetailTitle" class="text-base font-semibold text-gray-900">Add Screening</h2>
+            </div>
+            <button onclick="closeModal('screeningDetailModal')"
+                    class="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100 text-gray-400 transition-colors">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+        </div>
+        <div class="overflow-y-auto flex-1">
+            <form id="screeningDetailForm" method="POST" action="{% url 'patients:screening_add' %}" class="p-6 space-y-4">
+                {% csrf_token %}
+                <input type="hidden" name="patient" value="{{ patient.pk }}">
+
+                <!-- Type & Date -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="col-span-2">
+                        <label class="form-label">Screening Type <span class="text-red-500">*</span></label>
+                        <select name="screening_type" id="detailScreeningType" class="form-select"
+                                onchange="detailUpdateResult(this.value, '')">
+                            <option value="">— Select type —</option>
+                            {% for val, label in screening_type_choices %}
+                            <option value="{{ val }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Screening Date <span class="text-red-500">*</span></label>
+                        <input type="date" name="screening_date" class="form-input">
+                    </div>
+                    <div>
+                        <label class="form-label">Status</label>
+                        <select name="status" class="form-select">
+                            <option value="pending">Pending</option>
+                            <option value="completed">Completed</option>
+                            <option value="referred">Referred</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Result & Risk -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div id="detailResultWrapper">
+                        <label class="form-label">Result</label>
+                        <input type="text" name="result" class="form-input"
+                               placeholder="Select type first…" disabled>
+                    </div>
+                    <div>
+                        <label class="form-label">Risk Level</label>
+                        <select name="risk_level" class="form-select">
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Clinical Notes -->
+                <div>
+                    <label class="form-label">Comments</label>
+                    <textarea name="comments" class="form-textarea" rows="2"
+                              placeholder="Clinical observations…"></textarea>
+                </div>
+                <div>
+                    <label class="form-label">Recommendations</label>
+                    <textarea name="recommendations" class="form-textarea" rows="2"
+                              placeholder="Treatment recommendations…"></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="form-label">Follow-up Notes</label>
+                        <textarea name="followup_notes" class="form-textarea" rows="2"
+                                  placeholder="Notes for follow-up…"></textarea>
+                    </div>
+                    <div>
+                        <label class="form-label">Next Follow-up Date</label>
+                        <input type="date" name="next_followup_date" class="form-input">
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/80 rounded-b-2xl flex-shrink-0">
+            <button type="button" onclick="closeModal('screeningDetailModal')" class="btn-secondary"><i class="fas fa-times text-xs"></i> Cancel</button>
+            <button type="button" onclick="submitModalForm('screeningDetailForm','screeningDetailModal','Screening saved!')" class="btn-primary btn-save"><i class="fas fa-save text-xs"></i> Save</button>
+        </div>
+    </div>
+</div>
+
+
+<!-- ── FOLLOW-UP QUICK-ADD MODAL (for detail page) ── -->
+<div id="followupDetailModal" class="bc-modal fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('followupDetailModal')"></div>
+    <div class="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[92vh]">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center">
+                    <i class="fas fa-calendar-check text-amber-600"></i>
+                </div>
+                <h2 id="followupDetailTitle" class="text-base font-semibold text-gray-900">Schedule Follow-up</h2>
+            </div>
+            <button onclick="closeModal('followupDetailModal')"
+                    class="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100 text-gray-400 transition-colors">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+        </div>
+        <div class="overflow-y-auto flex-1">
+            <form id="followupDetailForm" method="POST" action="{% url 'patients:followup_add' %}" class="p-6 space-y-4">
+                {% csrf_token %}
+                <input type="hidden" name="patient" value="{{ patient.pk }}">
+                <div>
+                    <label class="form-label">Service / Reason <span class="text-red-500">*</span></label>
+                    <input type="text" name="service" class="form-input" placeholder="e.g. Hypertension follow-up…">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="form-label">Due Date <span class="text-red-500">*</span></label>
+                        <input type="date" name="due_date" class="form-input">
+                    </div>
+                    <div>
+                        <label class="form-label">Status</label>
+                        <select name="status" class="form-select">
+                            <option value="pending">Pending</option>
+                            <option value="completed">Completed</option>
+                            <option value="missed">Missed</option>
+                        </select>
+                    </div>
+                </div>
+                <div><label class="form-label">Notes</label>
+                    <textarea name="notes" class="form-textarea" rows="2"></textarea>
+                </div>
+            </form>
+        </div>
+        <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/80 rounded-b-2xl flex-shrink-0">
+            <button type="button" onclick="closeModal('followupDetailModal')" class="btn-secondary"><i class="fas fa-times text-xs"></i> Cancel</button>
+            <button type="button" onclick="submitModalForm('followupDetailForm','followupDetailModal','Follow-up scheduled!')" class="btn-primary btn-save"><i class="fas fa-save text-xs"></i> Save</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Edit patient from detail page
+function openEditPatientModalDetail(id) {
+    openModal('patientDetailModal');
+}
+
+// Add MCH record
+function openAddMCHModal(patientId) {
+    const form = document.getElementById('mchForm');
+    document.getElementById('mchModalTitle').textContent = 'Add MCH Record';
+    form.action = "{% url 'patients:mch_add' %}";
+    form.reset();
+    document.getElementById('mchPatientField').value = patientId;
+    clearModalErrors('mchModal');
+    const today = new Date().toISOString().split('T')[0];
+    form.querySelector('[name="visit_date"]').value = today;
+    openModal('mchModal');
+}
+
+async function openEditMCHModal(id) {
+    document.getElementById('mchModalTitle').textContent = 'Edit MCH Record';
+    await loadAndOpenModal(
+        `/patients/mch/${id}/json/`,
+        `/patients/mch/${id}/edit/`,
+        'mchForm', 'mchModal', null, null, null
+    );
+}
+
+// ─── Result maps (same as screening_list.html) ───
+const DETAIL_RESULT_MAPS = {
+    hiv:                     [['positive','Positive'],['negative','Negative'],['indeterminate','Indeterminate']],
+    malaria:                 [['positive','Positive'],['negative','Negative'],['severe','Severe Malaria']],
+    tuberculosis_tb:         [['positive','Positive'],['negative','Negative'],['suspected','Suspected'],['confirmed','Confirmed']],
+    diabetes:                [['normal','Normal'],['prediabetic','Prediabetic'],['diabetic','Diabetic'],['critical','Critical']],
+    hypertension:            [['normal','Normal'],['elevated','Elevated'],['stage_1','Stage 1'],['stage_2','Stage 2'],['crisis','Hypertensive Crisis']],
+    pregnancy_test:          [['positive','Positive'],['negative','Negative']],
+    cervical_cancer:         [['normal','Normal'],['abnormal','Abnormal'],['precancerous','Precancerous'],['positive','Positive'],['referred','Referred']],
+    breast_cancer:           [['normal','Normal'],['abnormal','Abnormal'],['suspected','Suspected'],['referred','Referred']],
+    bmi_nutrition:           [['underweight','Underweight'],['normal','Normal'],['overweight','Overweight'],['obese','Obese']],
+    mental_health:           [['stable','Stable'],['needs_followup','Needs Follow-up'],['critical','Critical']],
+    hepatitis_b:             [['positive','Positive'],['negative','Negative'],['immune','Immune (Vaccinated)']],
+    hepatitis_c:             [['positive','Positive'],['negative','Negative'],['indeterminate','Indeterminate']],
+    sti_screening:           [['positive','Positive'],['negative','Negative'],['treated','Under Treatment']],
+    cholesterol:             [['normal','Normal'],['borderline','Borderline High'],['high','High'],['very_high','Very High']],
+    sickle_cell:             [['normal','Normal (AA)'],['trait','Trait (AS)'],['disease','Disease (SS)']],
+    vision_screening:        [['normal','Normal'],['mild_impairment','Mild Impairment'],['moderate_impairment','Moderate Impairment'],['severe_impairment','Severe Impairment'],['referred','Referred']],
+    hearing_screening:       [['normal','Normal'],['mild_loss','Mild Loss'],['moderate_loss','Moderate Loss'],['severe_loss','Severe Loss'],['referred','Referred']],
+    covid_19:                [['positive','Positive'],['negative','Negative'],['suspected','Suspected']],
+    urinalysis:              [['normal','Normal'],['abnormal','Abnormal'],['infection_detected','Infection Detected'],['referred','Referred']],
+    blood_group:             [['a_positive','A+'],['a_negative','A-'],['b_positive','B+'],['b_negative','B-'],['ab_positive','AB+'],['ab_negative','AB-'],['o_positive','O+'],['o_negative','O-']],
+    anemia:                  [['normal','Normal'],['mild','Mild Anemia'],['moderate','Moderate Anemia'],['severe','Severe Anemia']],
+    child_malnutrition:      [['normal','Normal'],['mild_malnutrition','Mild Malnutrition'],['moderate_malnutrition','Moderate Malnutrition'],['severe_malnutrition','Severe Malnutrition']],
+    family_planning:         [['counseled','Counseled'],['method_provided','Method Provided'],['referred','Referred'],['declined','Declined']],
+    maternal_risk_assessment:[['low_risk','Low Risk'],['medium_risk','Medium Risk'],['high_risk','High Risk'],['referred','Referred']],
+    other:                   null,
+};
+
+function detailUpdateResult(screeningType, currentValue) {
+    const wrapper = document.getElementById('detailResultWrapper');
+    const options = DETAIL_RESULT_MAPS[screeningType];
+    if (!screeningType) {
+        wrapper.innerHTML = `<label class="form-label">Result</label>
+            <input type="text" name="result" class="form-input" placeholder="Select type first…" disabled>`;
+        return;
+    }
+    if (options === null) {
+        wrapper.innerHTML = `<label class="form-label">Result</label>
+            <input type="text" name="result" class="form-input" placeholder="Enter result…" value="${currentValue||''}">`;
+    } else {
+        const opts = options.map(([v,l]) =>
+            `<option value="${v}"${v===currentValue?' selected':''}>${l}</option>`
+        ).join('');
+        wrapper.innerHTML = `<label class="form-label">Result</label>
+            <select name="result" class="form-select">
+                <option value="">— Select result —</option>${opts}
+            </select>`;
+    }
+}
+
+// Screening from detail
+function openAddScreeningForPatient(patientId) {
+    const form = document.getElementById('screeningDetailForm');
+    document.getElementById('screeningDetailTitle').textContent = 'Add Screening';
+    form.action = "{% url 'patients:screening_add' %}";
+    form.reset();
+    document.getElementById('detailScreeningType').value = '';
+    detailUpdateResult('', '');
+    form.querySelector('[name="patient"]').value = patientId;
+    clearModalErrors('screeningDetailModal');
+    form.querySelector('[name="screening_date"]').value = new Date().toISOString().split('T')[0];
+    openModal('screeningDetailModal');
+}
+
+async function openEditScreeningDetailModal(id) {
+    document.getElementById('screeningDetailTitle').textContent = 'Edit Screening';
+    clearModalErrors('screeningDetailModal');
+    const data = await fetch(`/patients/screenings/${id}/json/`).then(r => r.json());
+    const form = document.getElementById('screeningDetailForm');
+    form.action = `/patients/screenings/${id}/edit/`;
+    document.getElementById('detailScreeningType').value = data.screening_type;
+    detailUpdateResult(data.screening_type, data.result);
+    ['screening_date','status','risk_level','comments','recommendations','followup_notes','next_followup_date'].forEach(k => {
+        const el = form.querySelector(`[name="${k}"]`);
+        if (el) el.value = data[k] || '';
+    });
+    openModal('screeningDetailModal');
+}
+
+// Follow-up from detail
+function openAddFollowupForPatient(patientId) {
+    const form = document.getElementById('followupDetailForm');
+    form.action = "{% url 'patients:followup_add' %}";
+    form.reset();
+    form.querySelector('[name="patient"]').value = patientId;
+    clearModalErrors('followupDetailModal');
+    openModal('followupDetailModal');
+}
+
+async function openEditFollowupModal(id) {
+    document.getElementById('followupDetailTitle').textContent = 'Edit Follow-up';
+    await loadAndOpenModal(
+        `/patients/followups/${id}/json/`,
+        `/patients/followups/${id}/edit/`,
+        'followupDetailForm', 'followupDetailModal', null, null, null
+    );
+}
+</script>
+{% endblock %}

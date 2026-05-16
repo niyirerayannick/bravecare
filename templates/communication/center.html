@@ -1,0 +1,268 @@
+{% extends 'base.html' %}
+{% block title %}Communication Center — BraveCare{% endblock %}
+{% block page_title %}Communication Center{% endblock %}
+{% block page_subtitle %}Send SMS reminders, outreach announcements, and follow-up notifications{% endblock %}
+
+{% block content %}
+
+<!-- Stats -->
+<div class="grid grid-cols-3 gap-4 mb-5">
+    <div class="bg-emerald-50 rounded-2xl p-4 border border-emerald-100 text-center">
+        <div class="text-2xl font-bold text-emerald-700">{{ sent_count }}</div>
+        <div class="text-xs text-emerald-600 mt-0.5 font-medium">Messages Sent</div>
+    </div>
+    <div class="bg-blue-50 rounded-2xl p-4 border border-blue-100 text-center">
+        <div class="text-2xl font-bold text-blue-700">{{ delivered_count }}</div>
+        <div class="text-xs text-blue-600 mt-0.5 font-medium">Delivered</div>
+    </div>
+    <div class="bg-amber-50 rounded-2xl p-4 border border-amber-100 text-center">
+        <div class="text-2xl font-bold text-amber-700">{{ draft_count }}</div>
+        <div class="text-xs text-amber-600 mt-0.5 font-medium">Drafts</div>
+    </div>
+</div>
+
+<!-- Filter + Compose -->
+<div class="card p-4 mb-5">
+    <form method="GET" class="flex flex-wrap gap-3 items-center">
+        <select name="status" class="form-select w-auto min-w-40">
+            <option value="">All Statuses</option>
+            <option value="sent"      {% if status_filter == 'sent' %}selected{% endif %}>Sent</option>
+            <option value="delivered" {% if status_filter == 'delivered' %}selected{% endif %}>Delivered</option>
+            <option value="draft"     {% if status_filter == 'draft' %}selected{% endif %}>Draft</option>
+            <option value="failed"    {% if status_filter == 'failed' %}selected{% endif %}>Failed</option>
+        </select>
+        <button type="submit" class="btn-secondary">
+            <i class="fas fa-filter text-xs"></i> Filter
+        </button>
+        {% if status_filter %}
+        <a href="{% url 'communication:center' %}" class="btn-secondary">
+            <i class="fas fa-times text-xs"></i> Clear
+        </a>
+        {% endif %}
+        <button type="button" onclick="openComposeModal()" class="btn-primary ml-auto">
+            <i class="fas fa-paper-plane text-xs"></i> Compose Message
+        </button>
+    </form>
+</div>
+
+<div class="grid grid-cols-1 xl:grid-cols-5 gap-5">
+
+    <!-- Left: Channels + Quick Templates -->
+    <div class="xl:col-span-2 space-y-5">
+
+        <!-- Channel Status -->
+        <div class="card p-5">
+            <h3 class="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <i class="fas fa-satellite-dish text-emerald-500"></i> Communication Channels
+            </h3>
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2 text-sm text-gray-700">
+                        <i class="fas fa-sms text-emerald-500 w-5"></i> SMS Gateway
+                    </div>
+                    <span class="badge-active">Connected</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2 text-sm text-gray-700">
+                        <i class="fas fa-bullhorn text-blue-500 w-5"></i> Announcements
+                    </div>
+                    <span class="badge-active">Active</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2 text-sm text-gray-700">
+                        <i class="fas fa-bell text-amber-500 w-5"></i> Auto Reminders
+                    </div>
+                    <span class="badge-pending">Scheduled</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Templates -->
+        <div class="card p-5">
+            <h3 class="text-sm font-semibold text-gray-900 mb-1 flex items-center gap-2">
+                <i class="fas fa-file-alt text-blue-500"></i> Quick Templates
+            </h3>
+            <p class="text-xs text-gray-400 mb-4">Click to compose with a pre-filled template</p>
+            <div class="space-y-2">
+                <button type="button"
+                    onclick="openComposeWithTemplate('sms_reminder','Appointment Reminder','Dear patient, this is a reminder for your upcoming appointment. Please attend or call to reschedule.')"
+                    class="w-full text-left px-4 py-3 bg-gray-50 hover:bg-emerald-50 border border-gray-200 hover:border-emerald-200 rounded-xl transition-colors group">
+                    <div class="text-sm font-medium text-gray-800 group-hover:text-emerald-700">Appointment Reminder</div>
+                    <div class="text-xs text-gray-400 mt-0.5">SMS Reminder type</div>
+                </button>
+                <button type="button"
+                    onclick="openComposeWithTemplate('outreach_announcement','Health Camp Notice','BraveCare Health Camp on [Date] at [Location]. Free screenings for all community members. Bring your health card.')"
+                    class="w-full text-left px-4 py-3 bg-gray-50 hover:bg-blue-50 border border-gray-200 hover:border-blue-200 rounded-xl transition-colors group">
+                    <div class="text-sm font-medium text-gray-800 group-hover:text-blue-700">Health Camp Notice</div>
+                    <div class="text-xs text-gray-400 mt-0.5">Outreach Announcement type</div>
+                </button>
+                <button type="button"
+                    onclick="openComposeWithTemplate('followup_notification','Follow-up Due','Your follow-up visit is due. Please visit the nearest health facility or contact BraveCare at your earliest convenience.')"
+                    class="w-full text-left px-4 py-3 bg-gray-50 hover:bg-amber-50 border border-gray-200 hover:border-amber-200 rounded-xl transition-colors group">
+                    <div class="text-sm font-medium text-gray-800 group-hover:text-amber-700">Follow-up Reminder</div>
+                    <div class="text-xs text-gray-400 mt-0.5">Follow-up Notification type</div>
+                </button>
+                <button type="button"
+                    onclick="openComposeWithTemplate('emergency','Emergency Alert','URGENT: [Details of emergency]. Please take immediate action and contact BraveCare Emergency Line.')"
+                    class="w-full text-left px-4 py-3 bg-gray-50 hover:bg-red-50 border border-gray-200 hover:border-red-200 rounded-xl transition-colors group">
+                    <div class="text-sm font-medium text-gray-800 group-hover:text-red-700">Emergency Alert</div>
+                    <div class="text-xs text-gray-400 mt-0.5">Emergency Alert type</div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right: Message History -->
+    <div class="xl:col-span-3">
+        <div class="card overflow-hidden">
+            <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+                <div>
+                    <h3 class="text-base font-semibold text-gray-900">Message History</h3>
+                    <p class="text-xs text-gray-500 mt-0.5">Recent communications</p>
+                </div>
+                <span class="text-xs text-gray-400">{{ recent_messages|length }} record{{ recent_messages|length|pluralize }}</span>
+            </div>
+            <div class="divide-y divide-gray-50">
+                {% for msg in recent_messages %}
+                <div class="px-5 py-4 hover:bg-gray-50 transition-colors">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex items-start gap-3">
+                            <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5
+                                {% if msg.message_type == 'sms_reminder' %}bg-emerald-100
+                                {% elif msg.message_type == 'emergency' %}bg-red-100
+                                {% elif msg.message_type == 'outreach_announcement' %}bg-blue-100
+                                {% else %}bg-amber-100{% endif %}">
+                                <i class="fas
+                                    {% if msg.message_type == 'sms_reminder' %}fa-sms text-emerald-600
+                                    {% elif msg.message_type == 'emergency' %}fa-exclamation-triangle text-red-600
+                                    {% elif msg.message_type == 'outreach_announcement' %}fa-bullhorn text-blue-600
+                                    {% else %}fa-bell text-amber-600{% endif %} text-sm"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <div class="text-sm font-semibold text-gray-900 truncate">{{ msg.subject }}</div>
+                                <div class="text-xs text-gray-500 mt-0.5">To: {{ msg.recipient }}</div>
+                                <div class="text-xs text-gray-400 mt-1 line-clamp-1">{{ msg.message }}</div>
+                            </div>
+                        </div>
+                        <div class="text-right flex-shrink-0 space-y-1">
+                            <span class="badge-{{ msg.status }}">{{ msg.get_status_display }}</span>
+                            <div class="text-xs text-gray-400">
+                                {% if msg.sent_at %}{{ msg.sent_at|date:"M d, H:i" }}{% else %}{{ msg.created_at|date:"M d, H:i" }}{% endif %}
+                            </div>
+                            <button onclick="openEditMessageModal({{ msg.pk }})"
+                                    class="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 ml-auto transition-colors">
+                                <i class="fas fa-pencil text-xs"></i> Edit
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="px-5 py-14 text-center">
+                    <i class="fas fa-comment-slash text-5xl text-gray-200 mb-4 block"></i>
+                    <p class="text-gray-500 font-semibold text-lg mb-1">No messages yet</p>
+                    <p class="text-gray-400 text-sm mb-5">Compose your first message to get started</p>
+                    <button onclick="openComposeModal()" class="btn-primary inline-flex">
+                        <i class="fas fa-paper-plane text-xs"></i> Compose Message
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- ═══════  MESSAGE MODAL  ═══════ -->
+<div id="messageModal" class="bc-modal fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('messageModal')"></div>
+    <div class="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[92vh]">
+
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center">
+                    <i class="fas fa-paper-plane text-emerald-600"></i>
+                </div>
+                <h2 id="messageModalTitle" class="text-base font-semibold text-gray-900">Compose Message</h2>
+            </div>
+            <button onclick="closeModal('messageModal')"
+                    class="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+        </div>
+
+        <div class="overflow-y-auto flex-1">
+            <form id="messageForm" method="POST" action="{% url 'communication:add' %}" class="p-6 space-y-4">
+                {% csrf_token %}
+                <div>
+                    <label class="form-label">Message Type <span class="text-red-500">*</span></label>
+                    <select name="message_type" class="form-select">
+                        <option value="">— Select type —</option>
+                        <option value="sms_reminder">SMS Reminder</option>
+                        <option value="outreach_announcement">Outreach Announcement</option>
+                        <option value="followup_notification">Follow-up Notification</option>
+                        <option value="general">General Message</option>
+                        <option value="emergency">Emergency Alert</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Recipient <span class="text-red-500">*</span></label>
+                    <input type="text" name="recipient" class="form-input" placeholder="+254… or group name">
+                </div>
+                <div>
+                    <label class="form-label">Subject <span class="text-red-500">*</span></label>
+                    <input type="text" name="subject" class="form-input" placeholder="Message subject">
+                </div>
+                <div>
+                    <label class="form-label">Message <span class="text-red-500">*</span></label>
+                    <textarea name="message" class="form-textarea" rows="4" placeholder="Type your message here…"></textarea>
+                </div>
+            </form>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/80 rounded-b-2xl flex-shrink-0">
+            <button type="button" onclick="closeModal('messageModal')" class="btn-secondary">
+                <i class="fas fa-times text-xs"></i> Cancel
+            </button>
+            <button type="button"
+                    onclick="submitModalForm('messageForm','messageModal','Message sent!')"
+                    class="btn-primary btn-save">
+                <i class="fas fa-paper-plane text-xs"></i> Send Message
+            </button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function openComposeModal() {
+    const form = document.getElementById('messageForm');
+    document.getElementById('messageModalTitle').textContent = 'Compose Message';
+    form.action = "{% url 'communication:add' %}";
+    form.reset();
+    clearModalErrors('messageModal');
+    openModal('messageModal');
+}
+
+function openComposeWithTemplate(type, subject, message) {
+    openComposeModal();
+    // Fill after modal opens (next tick so reset doesn't overwrite)
+    setTimeout(() => {
+        document.querySelector('#messageForm [name="message_type"]').value = type;
+        document.querySelector('#messageForm [name="subject"]').value = subject;
+        document.querySelector('#messageForm [name="message"]').value = message;
+    }, 50);
+}
+
+async function openEditMessageModal(id) {
+    document.getElementById('messageModalTitle').textContent = 'Edit Message';
+    await loadAndOpenModal(
+        `/communication/${id}/json/`,
+        `/communication/${id}/edit/`,
+        'messageForm', 'messageModal',
+        null, null, null
+    );
+}
+</script>
+{% endblock %}

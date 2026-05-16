@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} — BraveCare{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+{% block page_subtitle %}Define the scope, location, and goals of this outreach campaign{% endblock %}
+
+{% block content %}
+
+<div class="mb-5">
+    <a href="{% url 'outreach:list' %}" class="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-emerald-600 transition-colors">
+        <i class="fas fa-arrow-left text-xs"></i> Back to Campaigns
+    </a>
+</div>
+
+<div class="max-w-3xl">
+    <div class="card p-6">
+        <div class="flex items-center gap-3 mb-6 pb-5 border-b border-gray-100">
+            <div class="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
+                <i class="fas fa-broadcast-tower text-emerald-600 text-lg"></i>
+            </div>
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900">{{ title }}</h2>
+                <p class="text-sm text-gray-500">Fill in campaign details below</p>
+            </div>
+        </div>
+
+        <form method="POST" class="space-y-5">
+            {% csrf_token %}
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Campaign Title <span class="text-red-500">*</span></label>
+                {{ form.title }}
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">Description</label>
+                {{ form.description }}
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Location</label>
+                    {{ form.location }}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Status</label>
+                    {{ form.status }}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Start Date</label>
+                    {{ form.start_date }}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">End Date</label>
+                    {{ form.end_date }}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Target Population</label>
+                    {{ form.target_population }}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">People Reached</label>
+                    {{ form.reached_count }}
+                </div>
+            </div>
+
+            {% if form.non_field_errors %}
+            <div class="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+                {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="flex items-center gap-3 pt-4 border-t border-gray-100">
+                <button type="submit" class="btn-primary px-6">
+                    <i class="fas fa-save text-xs"></i>
+                    {% if campaign %}Update Campaign{% else %}Create Campaign{% endif %}
+                </button>
+                <a href="{% url 'outreach:list' %}" class="btn-secondary px-6">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

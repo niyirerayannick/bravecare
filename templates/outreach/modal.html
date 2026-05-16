@@ -1,0 +1,154 @@
+<!-- Campaign Add/Edit Modal — included in base.html and outreach/list.html -->
+<div id="campaignModal" class="bc-modal fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal('campaignModal')"></div>
+    <div class="relative z-10 bg-white rounded-2xl shadow-2xl w-full max-w-xl flex flex-col max-h-[92vh]">
+
+        <!-- Header -->
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center">
+                    <i class="fas fa-broadcast-tower text-emerald-600"></i>
+                </div>
+                <h2 id="campaignModalTitle" class="text-base font-semibold text-gray-900">New Outreach Campaign</h2>
+            </div>
+            <button onclick="closeModal('campaignModal')"
+                    class="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100
+                           text-gray-400 hover:text-gray-600 transition-colors">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+        </div>
+
+        <!-- Body -->
+        <div class="overflow-y-auto flex-1">
+            <form id="campaignForm" method="POST" class="p-6 space-y-4">
+                {% csrf_token %}
+                <div>
+                    <label class="form-label">Campaign Title <span class="text-red-500">*</span></label>
+                    <input type="text" name="title" class="form-input" placeholder="e.g. Remera Health Camp 2025">
+                </div>
+                <div>
+                    <label class="form-label">Description</label>
+                    <textarea name="description" class="form-textarea" rows="3" placeholder="Campaign objectives and details…"></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="form-label">Status</label>
+                        <select name="status" class="form-select">
+                            <option value="planned">Planned</option>
+                            <option value="active">Active</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    <div><!-- spacer --></div>
+                    <div>
+                        <label class="form-label">Start Date <span class="text-red-500">*</span></label>
+                        <input type="date" name="start_date" class="form-input">
+                    </div>
+                    <div>
+                        <label class="form-label">End Date <span class="text-red-500">*</span></label>
+                        <input type="date" name="end_date" class="form-input">
+                    </div>
+                    <div>
+                        <label class="form-label">Target Population</label>
+                        <input type="number" name="target_population" class="form-input" placeholder="0" min="0">
+                    </div>
+                    <div>
+                        <label class="form-label">People Reached</label>
+                        <input type="number" name="reached_count" class="form-input" placeholder="0" min="0">
+                    </div>
+                </div>
+
+                <!-- Location widget (no phone for campaigns) -->
+                <p class="text-[11px] font-bold text-gray-400 uppercase tracking-wider pt-1">Campaign Location</p>
+                <div data-loc-prefix="campaign">
+                    <div class="mb-3">
+                        <label class="form-label">Country</label>
+                        <select id="campaign_country" name="country_id">
+                            {% for c in countries %}
+                            <option value="{{ c.id }}"
+                                    data-iso="{{ c.iso_code|lower }}"
+                                    data-phone-code="{{ c.phone_code }}"
+                                    {% if c.iso_code == 'RW' %}selected{% endif %}>
+                                {{ c.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div id="campaign_rwanda_fields">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="form-label">Province</label>
+                                <select id="campaign_province" name="province_id"><option value="">Select Province</option></select>
+                            </div>
+                            <div>
+                                <label class="form-label">District</label>
+                                <select id="campaign_district" name="district_id"><option value="">Select District</option></select>
+                            </div>
+                            <div>
+                                <label class="form-label">Sector</label>
+                                <select id="campaign_sector" name="sector_id"><option value="">Select Sector</option></select>
+                            </div>
+                            <div>
+                                <label class="form-label">Cell <span class="text-gray-400 text-xs font-normal">(optional)</span></label>
+                                <select id="campaign_cell" name="cell_id"><option value="">Select Cell</option></select>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="campaign_nonrwanda_fields" class="hidden">
+                        <label class="form-label">Full Address / Location</label>
+                        <input type="text" id="campaign_address_text" name="address_text"
+                               class="form-input" placeholder="Street, Town, Country…">
+                    </div>
+                </div>
+
+            </form>
+        </div>
+
+        <!-- Footer -->
+        <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/80 rounded-b-2xl flex-shrink-0">
+            <button type="button" onclick="closeModal('campaignModal')" class="btn-secondary">
+                <i class="fas fa-times text-xs"></i> Cancel
+            </button>
+            <button type="button" onclick="submitModalForm('campaignForm','campaignModal','Campaign saved!')"
+                    class="btn-primary btn-save">
+                <i class="fas fa-save text-xs"></i> Save Campaign
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    if (typeof initLocWidget === 'function') initLocWidget('campaign', '');
+});
+
+function openAddCampaignModal() {
+    const form = document.getElementById('campaignForm');
+    document.getElementById('campaignModalTitle').textContent = 'New Outreach Campaign';
+    form.action = "{% url 'outreach:add' %}";
+    form.reset();
+    clearModalErrors('campaignModal');
+    resetLocWidget('campaign');
+    openModal('campaignModal');
+}
+
+async function openEditCampaignModal(id) {
+    document.getElementById('campaignModalTitle').textContent = 'Edit Campaign';
+    const form = document.getElementById('campaignForm');
+    form.action = `/outreach/${id}/edit/`;
+    form.reset();
+    clearModalErrors('campaignModal');
+    try {
+        const d = await fetch(`/outreach/${id}/json/`, { headers: {'X-Requested-With':'XMLHttpRequest'} }).then(r => r.json());
+        ['title','description','status','start_date','end_date','target_population','reached_count'].forEach(k => {
+            const el = form.querySelector(`[name="${k}"]`);
+            if (el && d[k] !== undefined) el.value = d[k];
+        });
+        await setLocValues('campaign', d);
+        openModal('campaignModal');
+    } catch(e) {
+        showToast('Failed to load campaign data.', 'error');
+    }
+}
+</script>
