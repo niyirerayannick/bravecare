@@ -1,108 +1,152 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Enter Reset Code — BraveCare Outreach</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh; display: flex; align-items: center; justify-content: center;
+            padding: 1rem; position: relative;
+        }
+        body::before {
+            content: ''; position: fixed; inset: 0;
+            background-image: url('https://hpgt.org/wp-content/uploads/2025/02/slide-2-scaled-1.jpg');
+            background-size: cover; background-position: center;
+            opacity: 0.35; z-index: -2;
+        }
+        body::after {
+            content: ''; position: fixed; inset: 0;
+            background: linear-gradient(135deg, #0f172a 0%, #064e3b 60%, #022c22 100%);
+            opacity: 0.82; z-index: -1;
+        }
+        .card { width: 100%; max-width: 36rem; background: #065f46; border-radius: 1.25rem; overflow: hidden; box-shadow: 0 32px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.06); }
+        .card-body { padding: 3rem 3.5rem 2.5rem; }
+        .brand { display: flex; flex-direction: column; align-items: center; margin-bottom: 2rem; }
+        .brand img { width: 100%; max-width: 320px; height: auto; border-radius: 0.5rem; }
+        .heading { text-align: center; margin-bottom: 1.75rem; }
+        .heading h1 { font-size: 1.75rem; font-weight: 800; color: #fff; line-height: 1.2; }
+        .heading p { font-size: 0.875rem; color: #a7f3d0; margin-top: 0.4rem; }
+        .divider { border: none; border-top: 1px solid rgba(255,255,255,0.12); margin-bottom: 1.75rem; }
+        .alert {
+            display: flex; align-items: center; gap: 0.5rem;
+            padding: 0.7rem 0.875rem; border-radius: 0.6rem; font-size: 0.82rem; margin-bottom: 1.25rem;
+        }
+        .alert-error { background: rgba(254,226,226,0.15); color: #fca5a5; border: 1px solid rgba(252,165,165,0.3); }
+        .alert-success { background: rgba(209,250,229,0.15); color: #6ee7b7; border: 1px solid rgba(110,231,183,0.3); }
+        .alert svg { flex-shrink: 0; width: 1rem; height: 1rem; }
+        label { display: block; font-size: 0.875rem; font-weight: 600; color: #d1fae5; margin-bottom: 0.6rem; text-align: center; }
+        .otp-input {
+            width: 100%; text-align: center;
+            font-size: 2.25rem; font-family: monospace; font-weight: 800;
+            letter-spacing: 0.6em; padding: 1rem 0.5rem;
+            background: #f0fdf4; border: 1.5px solid transparent;
+            border-radius: 0.75rem; outline: none; color: #065f46;
+            transition: border-color .15s, box-shadow .15s;
+        }
+        .otp-input:focus { border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,0.2); }
+        .otp-input::placeholder { color: #9ca3af; letter-spacing: 0.4em; }
+        .btn {
+            display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+            width: 100%; padding: 0.9rem; margin-top: 1.5rem;
+            background: #10b981; color: #fff; font-size: 1rem; font-weight: 700;
+            border: none; border-radius: 0.625rem; cursor: pointer;
+            box-shadow: 0 4px 18px rgba(16,185,129,0.45);
+            transition: background .15s, transform .1s; letter-spacing: 0.01em;
+        }
+        .btn:hover { background: #059669; }
+        .btn:active { transform: scale(0.98); }
+        .btn svg { width: 1rem; height: 1rem; }
+        .resend-btn {
+            display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+            width: 100%; padding: 0.7rem; margin-top: 0.75rem;
+            background: rgba(255,255,255,0.07); color: #6ee7b7;
+            font-size: 0.875rem; font-weight: 500;
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 0.625rem;
+            cursor: pointer; transition: background .15s;
+        }
+        .resend-btn:hover:not(:disabled) { background: rgba(255,255,255,0.12); }
+        .resend-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+        .resend-btn svg { width: 0.875rem; height: 0.875rem; }
+        .card-foot {
+            background: #022c22; padding: 0.9rem 3.5rem;
+            display: flex; align-items: center; justify-content: center; gap: 1.5rem;
+            font-size: 0.75rem; color: #6ee7b7;
+        }
+        .back-link { font-size: 0.75rem; color: #34d399; text-decoration: none; display: inline-flex; align-items: center; gap: 0.3rem; }
+        .back-link:hover { color: #6ee7b7; }
+        .back-link svg { width: 0.7rem; height: 0.7rem; }
+
+        @media (max-width: 500px) {
+            body { padding: 0.5rem; }
+            .card { border-radius: 1rem; }
+            .card-body { padding: 2rem 1.25rem 1.75rem; }
+            .card-foot { padding: 0.875rem 1.25rem; flex-direction: column; gap: 0.4rem; }
+            .heading h1 { font-size: 1.35rem; }
+            .brand img { max-width: 200px; }
+            .otp-input { font-size: 1.75rem; letter-spacing: 0.4em; }
+        }
+    </style>
 </head>
-<body class="bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-900 min-h-screen flex items-center justify-center p-4">
-
-    <div class="w-full max-w-sm">
-
-        <div class="text-center mb-8">
-            <div class="w-16 h-16 bg-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-2xl">
-                <i class="fas fa-key text-white text-2xl"></i>
-            </div>
-            <h1 class="text-2xl font-bold text-white">BraveCare Outreach</h1>
-            <p class="text-emerald-300 text-sm mt-1">Password Reset</p>
+<body>
+<div class="card">
+    <div class="card-body">
+        <div class="brand"><img src="{% static 'images/logo.png' %}" alt="BraveCare Outreach"></div>
+        <div class="heading">
+            <h1>Enter your reset code</h1>
+            <p>We sent a 6-digit code to <strong>{{ email_hint }}</strong></p>
         </div>
+        <hr class="divider">
 
-        <div class="bg-white rounded-2xl shadow-2xl p-8">
-            <div class="text-center mb-6">
-                <div class="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <i class="fas fa-envelope-open-text text-amber-500 text-2xl"></i>
-                </div>
-                <h2 class="text-xl font-bold text-gray-900 mb-1">Enter your reset code</h2>
-                <p class="text-gray-500 text-sm">
-                    We sent a 6-digit code to<br>
-                    <span class="font-semibold text-gray-700">{{ email_hint }}</span>
-                </p>
-            </div>
-
-            {% if messages %}
-                {% for message in messages %}
-                <div class="flex items-center gap-2 p-3 rounded-xl mb-4 text-sm
-                    {% if message.tags == 'success' %}bg-emerald-50 text-emerald-700 border border-emerald-200
-                    {% else %}bg-red-50 text-red-600 border border-red-200{% endif %}">
-                    <i class="fas {% if message.tags == 'success' %}fa-check-circle{% else %}fa-exclamation-circle{% endif %}"></i>
-                    {{ message }}
-                </div>
-                {% endfor %}
-            {% endif %}
-
-            <form method="POST" id="otpForm">
-                {% csrf_token %}
-                <div class="mb-5">
-                    <label class="block text-sm font-medium text-gray-700 mb-2 text-center">Reset code</label>
-                    <input type="text" name="code" id="otpInput"
-                           maxlength="6" inputmode="numeric" autocomplete="one-time-code"
-                           placeholder="000000"
-                           class="w-full text-center text-3xl font-mono font-bold tracking-[0.5em] py-4 border-2 border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
-                           autofocus>
-                </div>
-                <button type="submit"
-                        class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl transition-colors shadow-lg shadow-emerald-200 text-sm mb-3">
-                    <i class="fas fa-arrow-right mr-2"></i>Continue
-                </button>
-            </form>
-
-            <form method="POST" id="resendForm">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="resend">
-                <button type="submit" id="resendBtn"
-                        class="w-full py-2.5 text-sm text-emerald-600 hover:text-emerald-700 font-medium rounded-xl hover:bg-emerald-50 transition-colors flex items-center justify-center gap-2">
-                    <i class="fas fa-redo text-xs"></i>
-                    <span id="resendText">Resend code</span>
-                </button>
-            </form>
-
-            <div class="mt-5 pt-4 border-t border-gray-100 text-center">
-                <a href="/accounts/forgot-password/" class="text-sm text-gray-400 hover:text-gray-600 transition-colors">
-                    <i class="fas fa-arrow-left text-xs mr-1"></i> Try a different email
-                </a>
-            </div>
+        {% if messages %}{% for message in messages %}
+        <div class="alert {% if message.tags == 'success' %}alert-success{% else %}alert-error{% endif %}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            {{ message }}
         </div>
+        {% endfor %}{% endif %}
 
-        <p class="text-center text-slate-400 text-xs mt-6">&copy; 2025 BraveCare Outreach. All rights reserved.</p>
+        <form method="POST" id="otpForm">
+            {% csrf_token %}
+            <label for="otpInput">Reset code</label>
+            <input type="text" name="code" id="otpInput" maxlength="6" inputmode="numeric"
+                   autocomplete="one-time-code" placeholder="000000" autofocus class="otp-input">
+            <button type="submit" class="btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
+                Continue
+            </button>
+        </form>
+
+        <form method="POST" id="resendForm">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="resend">
+            <button type="submit" id="resendBtn" class="resend-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.36"/></svg>
+                <span id="resendText">Resend code</span>
+            </button>
+        </form>
     </div>
-
-    <script>
-        document.getElementById('otpInput').addEventListener('input', function() {
-            this.value = this.value.replace(/\D/g, '').slice(0, 6);
-            if (this.value.length === 6) document.getElementById('otpForm').submit();
-        });
-
-        let cooldown = 0;
-        const btn = document.getElementById('resendBtn');
-        const txt = document.getElementById('resendText');
-
-        document.getElementById('resendForm').addEventListener('submit', function() {
-            cooldown = 60;
-            btn.disabled = true;
-            btn.classList.add('opacity-50', 'cursor-not-allowed');
-            const iv = setInterval(() => {
-                cooldown--;
-                txt.textContent = `Resend code (${cooldown}s)`;
-                if (cooldown <= 0) {
-                    clearInterval(iv);
-                    txt.textContent = 'Resend code';
-                    btn.disabled = false;
-                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
-                }
-            }, 1000);
-        });
-    </script>
+    <div class="card-foot">
+        <a href="/accounts/forgot-password/" class="back-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+            Try a different email
+        </a>
+        <span>BraveCare v1.0 &copy; 2025</span>
+    </div>
+</div>
+<script>
+    document.getElementById('otpInput').addEventListener('input', function() {
+        this.value = this.value.replace(/\D/g, '').slice(0, 6);
+        if (this.value.length === 6) document.getElementById('otpForm').submit();
+    });
+    const btn = document.getElementById('resendBtn');
+    const txt = document.getElementById('resendText');
+    document.getElementById('resendForm').addEventListener('submit', function() {
+        let s = 60; btn.disabled = true;
+        const iv = setInterval(() => { s--; txt.textContent = `Resend code (${s}s)`; if (s <= 0) { clearInterval(iv); txt.textContent = 'Resend code'; btn.disabled = false; } }, 1000);
+    });
+</script>
 </body>
 </html>
